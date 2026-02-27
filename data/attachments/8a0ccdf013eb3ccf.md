@@ -79,7 +79,7 @@
           - listitem [ref=e124]:
             - generic [ref=e125] [cursor=pointer]:
               - img "profile picture" [ref=e126]
-              - paragraph [ref=e127]: manda user
+              - paragraph [ref=e127]: Fernando Alonso
               - generic [ref=e128]: 
       - navigation "Topbar Menu" [ref=e130]:
         - list [ref=e131]:
@@ -124,7 +124,7 @@
               - generic [ref=e172]: 
           - generic [ref=e174]:
             - generic [ref=e176]: Employee Name*
-            - textbox "Type for hints..." [ref=e180]: Elise Mitchell
+            - textbox "Type for hints..." [ref=e180]: Donavon Medhurst
             - generic [ref=e181]: Invalid
           - generic [ref=e183]:
             - generic [ref=e185]: Status*
@@ -133,17 +133,17 @@
               - generic [ref=e191]: 
           - generic [ref=e193]:
             - generic [ref=e195]: Username*
-            - textbox [ref=e197]: user.2uftfx
+            - textbox [ref=e197]: user.nsqh2l
         - generic [ref=e199]:
           - generic [ref=e200]:
             - generic [ref=e201]: Strong
             - generic [ref=e202]:
               - generic [ref=e204]: Password*
-              - textbox [ref=e206]: ra89Kt@kB9
+              - textbox [ref=e206]: 6u0ptvC&DH
             - paragraph [ref=e207]: For a strong password, please use a hard to guess combination of text with upper and lower case characters, symbols and numbers
           - generic [ref=e209]:
             - generic [ref=e211]: Confirm Password*
-            - textbox [ref=e213]: ra89Kt@kB9
+            - textbox [ref=e213]: 6u0ptvC&DH
         - separator [ref=e214]
         - generic [ref=e215]:
           - paragraph [ref=e216]: "* Required"
