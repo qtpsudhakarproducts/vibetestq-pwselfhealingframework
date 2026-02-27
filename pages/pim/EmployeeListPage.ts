@@ -15,7 +15,7 @@ export class EmployeeListPage extends BasePage {
     super(page);
     this.pageHeading       = this.page.getByRole('heading', { name: 'Employee Information' })
                                       .describe('Employee list page heading');
-    this.employeeNameInput = this.page.getByPlaceholder('Type for hints...')
+    this.employeeNameInput = this.page.getByPlaceholder('Type for hints...').first()
                                       .describe('Employee name search input');
     this.searchButton      = this.page.getByRole('button', { name: 'Search' })
                                       .describe('Search employees button');

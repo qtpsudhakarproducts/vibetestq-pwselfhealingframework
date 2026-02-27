@@ -95,6 +95,9 @@ export class AddUserPage extends BasePage {
   }
 
   async assertUserSavedSuccessfully(): Promise<void> {
-    await expect(this.successToast).toBeVisible({ timeout: 15_000 });
+    // After a successful save OrangeHRM redirects to the User Management list.
+    // The success toast appears briefly then the page navigates away, making a
+    // toast assertion flaky.  Checking the URL change is always reliable.
+    await this.page.waitForURL(/viewSystemUsers/, { timeout: 15_000 });
   }
 }
