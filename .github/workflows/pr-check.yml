@@ -1,0 +1,58 @@
+# PR Check — Smoke Suite
+name: PR Check — Smoke Suite
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Create auth directory
+        run: mkdir -p playwright/.auth
+
+      - name: Create environment file
+        run: |
+          mkdir -p test-data
+          cat > test-data/.env.dev << 'EOF'
+          BASE_URL=https://opensource-demo.orangehrmlive.com
+          ADMIN_USERNAME=Admin
+          ADMIN_PASSWORD=admin123
+          ESS_USERNAME=alice.johnson
+          ESS_PASSWORD=Alice@1234
+          EOF
+
+      - name: Run smoke suite
+        run: npx playwright test --grep @smoke
+        env:
+          CI: true
+          TEST_ENV: dev
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-pr-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 7

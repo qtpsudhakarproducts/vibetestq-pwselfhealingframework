@@ -1,0 +1,5 @@
+firstName,lastName,employeeId,gender,nationality
+John,Smith,EMP-CSV-001,Male,American
+Jane,Doe,EMP-CSV-002,Female,British
+Carlos,Fernandez,EMP-CSV-003,Male,Spanish
+Aisha,Patel,EMP-CSV-004,Female,Indian

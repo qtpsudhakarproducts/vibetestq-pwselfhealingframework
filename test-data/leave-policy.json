@@ -1,0 +1,12 @@
+{
+  "leaveTypes": [
+    "Annual Leave",
+    "Casual Leave",
+    "Medical Leave",
+    "Maternity Leave",
+    "Personal Leave"
+  ],
+  "maxConsecutiveDays": 5,
+  "minAdvanceNoticeDays": 1,
+  "allowHalfDay": true
+}

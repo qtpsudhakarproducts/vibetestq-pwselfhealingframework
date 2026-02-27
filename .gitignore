@@ -1,0 +1,25 @@
+node_modules/
+dist/
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.auth/
+
+# Allure
+allure-results/
+allure-report/
+
+# Test data secrets
+test-data/.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -1,0 +1,111 @@
+# Nightly Regression — Full Suite with Allure History → GitHub Pages
+name: Nightly Regression
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # midnight UTC every day
+  workflow_dispatch:       # allow manual trigger
+
+permissions:
+  contents: write          # required to push to gh-pages branch
+
+jobs:
+  regression:
+    name: Full Regression Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Create auth directory
+        run: mkdir -p playwright/.auth
+
+      - name: Create environment file
+        run: |
+          mkdir -p test-data
+          cat > test-data/.env.dev << 'EOF'
+          BASE_URL=https://opensource-demo.orangehrmlive.com
+          ADMIN_USERNAME=Admin
+          ADMIN_PASSWORD=admin123
+          ESS_USERNAME=alice.johnson
+          ESS_PASSWORD=Alice@1234
+          EOF
+
+      # ─── Restore previous Allure history for trend charts ────────────────────
+
+      - name: Download previous Allure history
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy Allure history from previous run
+        run: |
+          if [ -d "gh-pages/history" ]; then
+            mkdir -p allure-results/history
+            cp -r gh-pages/history allure-results/
+            echo "✅ Allure history restored from previous run"
+          else
+            echo "ℹ️  No previous history found — first run baseline"
+          fi
+
+      # ─── Run tests ───────────────────────────────────────────────────────────
+
+      - name: Run full regression suite
+        run: npx playwright test
+        env:
+          CI: true
+          TEST_ENV: dev
+        continue-on-error: true  # publish report even when tests fail
+
+      # ─── Generate Allure Report ───────────────────────────────────────────────
+
+      - name: Generate Allure HTML report
+        run: npx allure generate allure-results --clean -o allure-report
+        if: always()
+
+      # ─── Publish to GitHub Pages ──────────────────────────────────────────────
+
+      - name: Publish report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
+          commit_message: |
+            📊 Nightly regression report — run ${{ github.run_number }}
+
+      # ─── Upload Playwright artifacts as backup ────────────────────────────────
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-nightly-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results JSON
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ github.run_number }}
+          path: test-results/results.json
+          retention-days: 30
