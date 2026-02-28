@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - img "company-branding" [ref=e8]
+    - generic [ref=e9]:
+      - heading "Login" [level=5] [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e13]:
+          - paragraph [ref=e14]: "Username : Admin"
+          - paragraph [ref=e15]: "Password : admin123"
+        - generic [ref=e16]:
+          - generic [ref=e18]:
+            - generic [ref=e19]:
+              - generic [ref=e20]: 
+              - generic [ref=e21]: Username
+            - textbox "Username" [ref=e23]
+            - generic [ref=e24]: Required
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]: 
+              - generic [ref=e29]: Password
+            - textbox "Password" [ref=e31]: admin123
+          - button "Login" [active] [ref=e33] [cursor=pointer]
+          - paragraph [ref=e35] [cursor=pointer]: Forgot your password?
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - link [ref=e38] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/orangehrm/mycompany/
+          - link [ref=e41] [cursor=pointer]:
+            - /url: https://www.facebook.com/OrangeHRM/
+          - link [ref=e44] [cursor=pointer]:
+            - /url: https://twitter.com/orangehrm?lang=en
+          - link [ref=e47] [cursor=pointer]:
+            - /url: https://www.youtube.com/c/OrangeHRMInc
+        - generic [ref=e50]:
+          - paragraph [ref=e51]: OrangeHRM OS 5.8
+          - paragraph [ref=e52]:
+            - text: © 2005 - 2026
+            - link "OrangeHRM, Inc" [ref=e53] [cursor=pointer]:
+              - /url: http://www.orangehrm.com
+            - text: . All rights reserved.
+  - img "orangehrm-logo" [ref=e55]
+```
