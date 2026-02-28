@@ -24,6 +24,9 @@ jobs:
       # ── 1. Checkout ────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       # ── 2. Node.js setup ───────────────────────────────────────────────────
       - name: Setup Node.js
@@ -85,9 +88,10 @@ jobs:
           cp test-history-orangehrm-ui.json history/test-history-orangehrm-ui.json
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git add history/test-history-orangehrm-ui.json
           git diff --staged --quiet && echo "No history changes to commit" || \
-            (git commit -m "chore: update test history [run #${{ github.run_number }}] [skip ci]" && git push)
+            (git commit -m "chore: update test history [run #${{ github.run_number }}] [skip ci]" && git push origin HEAD:${{ github.ref_name }})
 
       # ── 9. Prepare GitHub Pages content ───────────────────────────────────
       - name: Prepare GitHub Pages content
