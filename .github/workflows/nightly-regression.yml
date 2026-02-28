@@ -58,10 +58,14 @@ jobs:
 
       - name: Copy Allure history from previous run
         run: |
-          if [ -d "gh-pages/history" ]; then
+          if [ -d "gh-pages/allure/history" ]; then
+            mkdir -p allure-results/history
+            cp -r gh-pages/allure/history allure-results/
+            echo "✅ Allure history restored from previous run"
+          elif [ -d "gh-pages/history" ]; then
             mkdir -p allure-results/history
             cp -r gh-pages/history allure-results/
-            echo "✅ Allure history restored from previous run"
+            echo "✅ Allure history restored (legacy path)"
           else
             echo "ℹ️  No previous history found — first run baseline"
           fi
@@ -83,13 +87,20 @@ jobs:
 
       # ─── Publish to GitHub Pages ──────────────────────────────────────────────
 
+      - name: Prepare gh-pages directory structure
+        if: always()
+        run: |
+          mkdir -p gh-pages-deploy/allure
+          cp -r allure-report/. gh-pages-deploy/allure/
+
       - name: Publish report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         if: always()
         with:
           personal_token: ${{ secrets.GH_PAT }}
           publish_branch: gh-pages
-          publish_dir: allure-report
+          publish_dir: gh-pages-deploy
+          keep_files: true
           commit_message: |
             📊 Nightly regression report — run ${{ github.run_number }}
 

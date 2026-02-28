@@ -93,11 +93,49 @@ jobs:
       - name: Prepare GitHub Pages content
         if: always()
         run: |
-          mkdir -p gh-pages-content/archive
-          cp smart-report.html gh-pages-content/index.html
+          # Smart report lives under smart/ subdirectory — Allure lives under allure/
+          # Landing index.html at root links to both
+          mkdir -p gh-pages-content/smart/archive
+
+          cp smart-report.html gh-pages-content/smart/index.html
           TIMESTAMP=$(date +%Y-%m-%d-%H%M)
-          cp smart-report.html "gh-pages-content/archive/report-${TIMESTAMP}-run${{ github.run_number }}.html"
-          echo "📄 Report prepared for GitHub Pages deployment"
+          cp smart-report.html "gh-pages-content/smart/archive/report-${TIMESTAMP}-run${{ github.run_number }}.html"
+
+          # Create/refresh the root landing page
+          cat > gh-pages-content/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>OrangeHRM — Test Reports</title>
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 600px; margin: 80px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
+              h1 { font-size: 1.5rem; border-bottom: 1px solid #30363d; padding-bottom: 12px; }
+              .cards { display: grid; gap: 16px; margin-top: 24px; }
+              a.card { display: block; padding: 20px 24px; border: 1px solid #30363d; border-radius: 8px; text-decoration: none; color: inherit; background: #161b22; transition: border-color .2s; }
+              a.card:hover { border-color: #58a6ff; }
+              a.card h2 { margin: 0 0 6px; font-size: 1.1rem; color: #58a6ff; }
+              a.card p  { margin: 0; font-size: .875rem; color: #8b949e; }
+              .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:.75rem; background:#1f6feb; color:#fff; margin-left:8px; vertical-align:middle; }
+            </style>
+          </head>
+          <body>
+            <h1>vibetestq-pwselfhealingframework <span class="badge">OrangeHRM</span></h1>
+            <div class="cards">
+              <a class="card" href="smart/index.html">
+                <h2>Smart Report</h2>
+                <p>History-aware report — trends, flakiness grades, run comparison, trace viewer</p>
+              </a>
+              <a class="card" href="allure/index.html">
+                <h2>Allure Report</h2>
+                <p>Full suite report — test steps, attachments, categories, timeline</p>
+              </a>
+            </div>
+          </body>
+          </html>
+          EOF
+          echo "📄 GitHub Pages content prepared"
 
       # ── 10. Deploy to GitHub Pages ─────────────────────────────────────────
       - name: Deploy to GitHub Pages
@@ -106,7 +144,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages-content
-          keep_files: true             # preserves archive/ across deploys
+          keep_files: true             # preserves allure/ and archive/ across deploys
           commit_message: "deploy: smart report — run #${{ github.run_number }} [${{ github.sha }}]"
 
       # ── 11. Upload artifacts (useful for PRs that don't deploy to Pages) ──
