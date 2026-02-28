@@ -1,5 +1,6 @@
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 // Detect CI environment — affects workers, retries, and trace settings
 const isCI = !!process.env.CI;
@@ -37,6 +38,38 @@ export default defineConfig({
     // summary reporter — grouped overview after every run
     ['./reporters/SummaryReporter.ts'],
 
+    // smart reporter — history-aware HTML report with trends, flakiness, stability grades
+    ['playwright-smart-reporter', {
+      outputFile:               path.resolve('smart-report.html'),
+      historyFile:              path.resolve('test-history.json'),
+      maxHistoryRuns:           20,
+      performanceThreshold:     0.2,
+      projectName:              'orangehrm-ui',
+      runId:                    process.env.GITHUB_RUN_ID,
+
+      // Analysis features
+      enableRetryAnalysis:      true,
+      enableFailureClustering:  true,
+      enableStabilityScore:     true,
+      enableTrendsView:         true,
+      enableComparison:         true,
+      enableGalleryView:        true,
+      enableTraceViewer:        true,
+      enableNetworkLogs:        true,
+
+      // Flakiness thresholds
+      thresholds: {
+        flakinessStable:   0.1,
+        flakinessUnstable: 0.3,
+      },
+
+      // Branding
+      branding: {
+        title:  'OrangeHRM Automation Report',
+        footer: 'vibetestq-pwselfhealingframework',
+      },
+    }],
+
   ],
 
   // ─── Global Settings ────────────────────────────────────────────────────────
@@ -52,8 +85,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video:      'retain-on-failure',
 
-    // Trace on first retry in CI — full replay for flaky failures
-    trace: isCI ? 'on-first-retry' : 'off',
+    // Trace retained on failure — required for smart reporter network logs
+    trace: isCI ? 'retain-on-failure' : 'off',
   },
 
   // ─── Projects ───────────────────────────────────────────────────────────────

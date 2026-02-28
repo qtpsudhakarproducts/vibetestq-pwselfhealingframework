@@ -1,0 +1,121 @@
+name: Playwright Tests + Smart Report
+
+on:
+  push:
+    branches: [advreport, main]
+  pull_request:
+    branches: [advreport, main]
+  schedule:
+    - cron: '0 6 * * 1-5'      # Weekday 6am UTC — nightly regression run
+  workflow_dispatch:             # Manual trigger from Actions tab
+
+permissions:
+  contents: write                # push history/ and gh-pages commits
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    name: Run Tests & Publish Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js setup ───────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # ── 3. Install dependencies ────────────────────────────────────────────
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # ── 4. Restore test history (cache fast-path) ──────────────────────────
+      - name: Restore test history from cache
+        uses: actions/cache/restore@v4
+        id: history-cache
+        with:
+          path: test-history-orangehrm-ui.json
+          key: test-history-${{ github.ref_name }}
+          restore-keys: |
+            test-history-advreport
+            test-history-
+
+      # ── 5. Restore test history (repo fallback) ────────────────────────────
+      - name: Restore test history from repository (fallback)
+        if: steps.history-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ -f history/test-history-orangehrm-ui.json ]; then
+            cp history/test-history-orangehrm-ui.json test-history-orangehrm-ui.json
+            echo "✅ History restored from committed file ($(wc -c < test-history-orangehrm-ui.json) bytes)"
+          else
+            echo "ℹ️  No prior history found — this is the first run"
+          fi
+
+      # ── 6. Run Playwright tests ────────────────────────────────────────────
+      - name: Run Playwright tests
+        run: npx playwright test
+        continue-on-error: true        # don't abort — we still want to publish results
+        env:
+          CI: true
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+      # ── 7. Save updated history to cache ──────────────────────────────────
+      - name: Save test history to cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: test-history-orangehrm-ui.json
+          key: test-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      # ── 8. Commit history to repository (permanent backup) ────────────────
+      - name: Commit test history to repository
+        if: always() && (github.ref == 'refs/heads/advreport' || github.ref == 'refs/heads/main')
+        run: |
+          mkdir -p history
+          cp test-history-orangehrm-ui.json history/test-history-orangehrm-ui.json
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add history/test-history-orangehrm-ui.json
+          git diff --staged --quiet && echo "No history changes to commit" || \
+            (git commit -m "chore: update test history [run #${{ github.run_number }}] [skip ci]" && git push)
+
+      # ── 9. Prepare GitHub Pages content ───────────────────────────────────
+      - name: Prepare GitHub Pages content
+        if: always()
+        run: |
+          mkdir -p gh-pages-content/archive
+          cp smart-report.html gh-pages-content/index.html
+          TIMESTAMP=$(date +%Y-%m-%d-%H%M)
+          cp smart-report.html "gh-pages-content/archive/report-${TIMESTAMP}-run${{ github.run_number }}.html"
+          echo "📄 Report prepared for GitHub Pages deployment"
+
+      # ── 10. Deploy to GitHub Pages ─────────────────────────────────────────
+      - name: Deploy to GitHub Pages
+        if: always() && (github.ref == 'refs/heads/advreport' || github.ref == 'refs/heads/main')
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages-content
+          keep_files: true             # preserves archive/ across deploys
+          commit_message: "deploy: smart report — run #${{ github.run_number }} [${{ github.sha }}]"
+
+      # ── 11. Upload artifacts (useful for PRs that don't deploy to Pages) ──
+      - name: Upload report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-report-run-${{ github.run_number }}
+          path: |
+            smart-report.html
+            test-history-orangehrm-ui.json
+          retention-days: 30
