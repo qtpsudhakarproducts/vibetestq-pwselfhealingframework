@@ -2,8 +2,11 @@
 import { test, expect } from '../fixtures';
 import { LoginPage }     from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { readEnv } from '../data/readers';
 
 test.describe('Login', () => {
+
+  const env = readEnv();
 
   test.use({ storageState: { cookies: [], origins: [] } }); // no auth for login tests
 
@@ -19,7 +22,7 @@ test.describe('Login', () => {
     { tag: ['@login', '@smoke', '@critical'] },
     async ({ page }) => {
       const dashboardPage = new DashboardPage(page);
-      await loginPage.login('Admin', 'admin123');
+      await loginPage.login(env.adminUsername, env.adminPassword);
       await dashboardPage.assertPageLoaded();
     }
   );
@@ -27,7 +30,7 @@ test.describe('Login', () => {
   test('invalid password shows error message',
     { tag: ['@login', '@regression', '@high'] },
     async () => {
-      await loginPage.login('Admin', 'wrongpassword');
+      await loginPage.login(env.adminUsername, 'wrongpassword');
       await loginPage.assertInvalidCredentialsError();
     }
   );
@@ -35,7 +38,7 @@ test.describe('Login', () => {
   test('invalid username shows error message',
     { tag: ['@login', '@regression', '@high'] },
     async () => {
-      await loginPage.login('nonexistentuser', 'admin123');
+      await loginPage.login('nonexistentuser', env.adminPassword);
       await loginPage.assertInvalidCredentialsError();
     }
   );
@@ -43,7 +46,7 @@ test.describe('Login', () => {
   test('empty username shows required field error',
     { tag: ['@login', '@regression', '@medium'] },
     async () => {
-      await loginPage.fillPassword('admin123');
+      await loginPage.fillPassword(env.adminPassword);
       await loginPage.clickLogin();
       await loginPage.assertUsernameRequiredError();
     }

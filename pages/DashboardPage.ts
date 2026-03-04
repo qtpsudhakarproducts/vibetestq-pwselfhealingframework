@@ -30,25 +30,25 @@ export class DashboardPage extends BasePage {
   // ─── Navigation ──────────────────────────────────────────────────────────────
 
   async navigateToPIM(): Promise<void> {
-    await this.pimMenuItem.click();
+    await this.actions.click(this.pimMenuItem);
     await this.waitForPageLoad();
   }
 
   async navigateToAdmin(): Promise<void> {
-    await this.adminMenuItem.click();
+    await this.actions.click(this.adminMenuItem);
     await this.waitForPageLoad();
   }
 
   async navigateToLeave(): Promise<void> {
-    await this.leaveMenuItem.click();
+    await this.actions.click(this.leaveMenuItem);
     await this.waitForPageLoad();
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async logout(): Promise<void> {
-    await this.userDropdown.click();
-    await this.logoutOption.click();
+    await this.actions.click(this.userDropdown);
+    await this.actions.click(this.logoutOption);
     await this.waitForPageLoad();
   }
 

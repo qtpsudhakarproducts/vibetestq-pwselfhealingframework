@@ -1,9 +1,11 @@
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import { readEnv } from './data/readers';
 
 // Detect CI environment — affects workers, retries, and trace settings
 const isCI = !!process.env.CI;
+const env = readEnv();
 
 export default defineConfig({
 
@@ -75,7 +77,7 @@ export default defineConfig({
   // ─── Global Settings ────────────────────────────────────────────────────────
 
   use: {
-    baseURL: 'https://opensource-demo.orangehrmlive.com',
+    baseURL: env.baseURL,
     headless: true,
     viewport: { width: 1280, height: 720 },
     actionTimeout:     10_000,

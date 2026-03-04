@@ -17,6 +17,7 @@ export class AddUserPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
+
     this.pageHeading          = this.page.getByRole('heading', { name: 'Add User' })
                                          .describe('Add user page heading');
     this.userRoleDropdown     = this.page.locator('.oxd-select-text').first()
@@ -46,35 +47,32 @@ export class AddUserPage extends BasePage {
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async selectUserRole(role: 'Admin' | 'ESS'): Promise<void> {
-    await this.userRoleDropdown.click();
-    await this.page.getByRole('option', { name: role }).click();
+    await this.controls.selectDropdown(this.userRoleDropdown, role);
   }
 
   async fillEmployeeName(employeeName: string): Promise<void> {
-    await this.employeeNameInput.fill(employeeName);
-    await this.page.locator('.oxd-autocomplete-option').first().waitFor({ state: 'visible', timeout: 10_000 });
-    await this.page.locator('.oxd-autocomplete-option').first().click();
+    await this.controls.fillAutocomplete(this.employeeNameInput, employeeName);
   }
 
   async selectStatus(status: 'Enabled' | 'Disabled'): Promise<void> {
-    await this.statusDropdown.click();
-    await this.page.getByRole('option', { name: status }).click();
+    await this.controls.selectDropdown(this.statusDropdown, status);
   }
 
   async fillUsername(username: string): Promise<void> {
-    await this.usernameInput.fill(username);
+    await this.actions.fill(this.usernameInput, username);
   }
 
   async fillPassword(password: string): Promise<void> {
-    await this.passwordInput.fill(password);
+    await this.actions.fill(this.passwordInput, password);
   }
 
   async fillConfirmPassword(password: string): Promise<void> {
-    await this.confirmPasswordInput.fill(password);
+    await this.actions.fill(this.confirmPasswordInput, password);
   }
 
   async saveUser(): Promise<void> {
-    await this.saveButton.click();
+    await this.actions.click(this.saveButton);
+    await this.controls.waitForToast();
   }
 
   async addUser(user: UserData): Promise<void> {

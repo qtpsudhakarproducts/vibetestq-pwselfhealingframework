@@ -1,26 +1,24 @@
 // tests/admin/user.spec.ts
 import { test, expect }    from '../../fixtures';
 import { generateEmployee, generateUser } from '../../data/generate';
-import { AddEmployeePage }  from '../../pages/pim/AddEmployeePage';
+import { ApiClient, EmployeeApi } from '../../api';
+import { readEnv } from '../../data/readers';
 
 test.describe('Admin — User Management', () => {
 
   const employee = generateEmployee();
   const user     = generateUser(employee.fullName);
 
-  test.beforeAll(async ({ browser }) => {
-    // Create the employee first — a user must be linked to an existing employee
-    const context = await browser.newContext({
-      storageState: 'playwright/.auth/admin.json',
-    });
-    const page            = context.newPage();
-    const addEmployeePage = new AddEmployeePage(await page);
-
-    await addEmployeePage.goto();
-    await addEmployeePage.assertPageLoaded();
-    await addEmployeePage.addEmployee(employee);
-    await (await page).waitForURL(/viewPersonalDetails/, { timeout: 15_000 });
-    await context.close();
+  test.beforeAll(async () => {
+    const env = readEnv();
+    const client = await ApiClient.create(
+      env.baseURL,
+      env.adminUsername,
+      env.adminPassword
+    );
+    const employeeApi = new EmployeeApi(client);
+    await employeeApi.createEmployee(employee);
+    await client.dispose();
   });
 
   test('admin can add a new system user',

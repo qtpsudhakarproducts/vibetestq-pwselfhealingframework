@@ -1,25 +1,24 @@
 // pages/leave/LeaveListPage.ts
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage }              from '../BasePage';
+import { WaitHelpers }           from '../../helpers/WaitHelpers';
 
 export class LeaveListPage extends BasePage {
 
   private readonly pageHeading:      Locator;
   private readonly leaveTable:       Locator;
   private readonly noRecordsMessage: Locator;
-  private readonly confirmButton:    Locator;
   private readonly successToast:     Locator;
 
   constructor(page: Page) {
     super(page);
+
     this.pageHeading      = this.page.getByRole('heading', { name: 'Leave List' })
                                      .describe('Leave list page heading');
     this.leaveTable       = this.page.locator('.oxd-table-body')
                                      .describe('Leave requests table body');
     this.noRecordsMessage = this.page.getByText('No Records Found')
                                      .describe('No records found message');
-    this.confirmButton    = this.page.getByRole('button', { name: 'Ok' })
-                                     .describe('Confirm action dialog button');
     this.successToast     = this.page.locator('.oxd-toast-content')
                                      .describe('Success toast notification');
   }
@@ -33,17 +32,15 @@ export class LeaveListPage extends BasePage {
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async approveLeaveRequest(employeeName: string): Promise<void> {
-    const row = this.leaveTable
-      .getByRole('row', { name: new RegExp(employeeName, 'i') });
-    await row.getByRole('button', { name: 'Approve' }).click();
-    await this.confirmButton.click();
+    await this.controls.clickTableRowAction(this.leaveTable, employeeName, 'Approve');
+    await this.controls.handleConfirmationDialog('Ok');
+    await this.controls.waitForToast();
   }
 
   async rejectLeaveRequest(employeeName: string): Promise<void> {
-    const row = this.leaveTable
-      .getByRole('row', { name: new RegExp(employeeName, 'i') });
-    await row.getByRole('button', { name: 'Reject' }).click();
-    await this.confirmButton.click();
+    await this.controls.clickTableRowAction(this.leaveTable, employeeName, 'Reject');
+    await this.controls.handleConfirmationDialog('Ok');
+    await this.controls.waitForToast();
   }
 
   // ─── Assertions ───────────────────────────────────────────────────────────────
@@ -54,9 +51,19 @@ export class LeaveListPage extends BasePage {
   }
 
   async assertLeaveRequestExists(employeeName: string): Promise<void> {
+    await this.controls.waitForTableToLoad(this.leaveTable);
     await expect(
       this.leaveTable.getByRole('row', { name: new RegExp(employeeName, 'i') })
     ).toBeVisible();
+  }
+
+  async assertLeaveRequestStatus(
+    employeeName:   string,
+    expectedStatus: 'Pending' | 'Approved' | 'Rejected'
+  ): Promise<void> {
+    const row = this.leaveTable
+      .getByRole('row', { name: new RegExp(employeeName, 'i') });
+    await expect(row.getByText(expectedStatus)).toBeVisible();
   }
 
   async assertLeaveApproved(): Promise<void> {

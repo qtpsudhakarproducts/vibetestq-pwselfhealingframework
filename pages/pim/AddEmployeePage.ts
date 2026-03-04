@@ -14,6 +14,7 @@ export class AddEmployeePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
+
     this.pageHeading     = this.page.getByRole('heading', { name: 'Add Employee' })
                                     .describe('Add employee page heading');
     this.firstNameInput  = this.page.getByPlaceholder('First Name')
@@ -37,20 +38,19 @@ export class AddEmployeePage extends BasePage {
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async fillFirstName(firstName: string): Promise<void> {
-    await this.firstNameInput.fill(firstName);
+    await this.actions.fill(this.firstNameInput, firstName);
   }
 
   async fillLastName(lastName: string): Promise<void> {
-    await this.lastNameInput.fill(lastName);
+    await this.actions.fill(this.lastNameInput, lastName);
   }
 
   async fillEmployeeId(employeeId: string): Promise<void> {
-    await this.employeeIdInput.clear();
-    await this.employeeIdInput.fill(employeeId);
+    await this.actions.fill(this.employeeIdInput, employeeId);
   }
 
   async saveEmployee(): Promise<void> {
-    await this.saveButton.click();
+    await this.actions.click(this.saveButton);
   }
 
   async addEmployee(employee: EmployeeData): Promise<void> {

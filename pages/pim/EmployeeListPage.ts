@@ -13,6 +13,7 @@ export class EmployeeListPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
+
     this.pageHeading       = this.page.getByRole('heading', { name: 'Employee Information' })
                                       .describe('Employee list page heading');
     this.employeeNameInput = this.page.getByPlaceholder('Type for hints...').first()
@@ -34,14 +35,14 @@ export class EmployeeListPage extends BasePage {
   }
 
   async clickAddEmployee(): Promise<void> {
-    await this.addButton.click();
+    await this.actions.click(this.addButton);
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async searchByEmployeeName(name: string): Promise<void> {
-    await this.employeeNameInput.fill(name);
-    await this.searchButton.click();
+    await this.actions.fill(this.employeeNameInput, name);
+    await this.actions.click(this.searchButton);
     await this.waitForPageLoad();
   }
 

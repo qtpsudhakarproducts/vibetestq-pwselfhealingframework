@@ -40,35 +40,31 @@ export class ApplyLeavePage extends BasePage {
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async selectLeaveType(leaveType: string): Promise<void> {
-    await this.leaveTypeDropdown.click();
-    await this.page.getByRole('option', { name: leaveType }).click();
+    await this.controls.selectDropdown(this.leaveTypeDropdown, leaveType);
   }
 
   async fillFromDate(date: string): Promise<void> {
-    await this.fromDateInput.fill(date);
-    await this.fromDateInput.press('Enter');
+    await this.controls.fillDateInput(this.fromDateInput, date);
   }
 
   async fillToDate(date: string): Promise<void> {
-    await this.toDateInput.fill(date);
-    await this.toDateInput.press('Enter');
+    await this.controls.fillDateInput(this.toDateInput, date);
   }
 
   async fillComment(comment: string): Promise<void> {
-    await this.commentInput.fill(comment);
+    await this.actions.fill(this.commentInput, comment);
   }
 
   async submitLeaveApplication(): Promise<void> {
-    await this.applyButton.click();
+    await this.actions.click(this.applyButton);
+    await this.controls.waitForToast();
   }
 
   async applyForLeave(leave: LeaveData): Promise<void> {
     await this.selectLeaveType(leave.leaveType);
     await this.fillFromDate(leave.fromDate);
     await this.fillToDate(leave.toDate);
-    if (leave.comment) {
-      await this.fillComment(leave.comment);
-    }
+    if (leave.comment) await this.fillComment(leave.comment);
     await this.submitLeaveApplication();
   }
 

@@ -35,12 +35,34 @@ export function readEnv(): EnvConfig {
     }
   }
 
+  const baseURL = process.env['BASE_URL'] ?? 'https://opensource-demo.orangehrmlive.com';
+  const adminUsername = process.env['ADMIN_USERNAME'];
+  const adminPassword = process.env['ADMIN_PASSWORD'];
+  const essUsername = process.env['ESS_USERNAME'];
+  const essPassword = process.env['ESS_PASSWORD'];
+
+  const missingVars = [
+    ['ADMIN_USERNAME', adminUsername],
+    ['ADMIN_PASSWORD', adminPassword],
+    ['ESS_USERNAME', essUsername],
+    ['ESS_PASSWORD', essPassword],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingVars.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}. ` +
+      `Set them in shell/CI or test-data/.env.{TEST_ENV}.`
+    );
+  }
+
   return {
-    baseURL:       process.env['BASE_URL']       ?? 'https://opensource-demo.orangehrmlive.com',
-    adminUsername: process.env['ADMIN_USERNAME'] ?? 'Admin',
-    adminPassword: process.env['ADMIN_PASSWORD'] ?? 'admin123',
-    essUsername:   process.env['ESS_USERNAME']   ?? 'alice.johnson',
-    essPassword:   process.env['ESS_PASSWORD']   ?? 'Alice@1234',
+    baseURL,
+    adminUsername: adminUsername as string,
+    adminPassword: adminPassword as string,
+    essUsername: essUsername as string,
+    essPassword: essPassword as string,
   };
 }
 

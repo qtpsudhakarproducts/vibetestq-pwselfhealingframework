@@ -30,15 +30,15 @@ export class LoginPage extends BasePage {
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async fillUsername(username: string): Promise<void> {
-    await this.usernameInput.fill(username);
+    await this.actions.fill(this.usernameInput, username);
   }
 
   async fillPassword(password: string): Promise<void> {
-    await this.passwordInput.fill(password);
+    await this.actions.fill(this.passwordInput, password);
   }
 
   async clickLogin(): Promise<void> {
-    await this.loginButton.click();
+    await this.actions.click(this.loginButton);
   }
 
   async login(username: string, password: string): Promise<void> {

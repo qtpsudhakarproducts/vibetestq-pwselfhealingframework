@@ -40,11 +40,11 @@ jobs:
         run: |
           mkdir -p test-data
           cat > test-data/.env.dev << 'EOF'
-          BASE_URL=https://opensource-demo.orangehrmlive.com
-          ADMIN_USERNAME=Admin
-          ADMIN_PASSWORD=admin123
-          ESS_USERNAME=alice.johnson
-          ESS_PASSWORD=Alice@1234
+          BASE_URL=${{ vars.BASE_URL }}
+          ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          ESS_USERNAME=${{ secrets.ESS_USERNAME }}
+          ESS_PASSWORD=${{ secrets.ESS_PASSWORD }}
           EOF
 
       # ─── Restore previous Allure history for trend charts ────────────────────
@@ -77,6 +77,11 @@ jobs:
         env:
           CI: true
           TEST_ENV: dev
+          # Runtime self-healing — nightly only
+          ENABLE_RUNTIME_HEALING: 'true'
+          HEAL_LLM_PROVIDER: 'anthropic'
+          HEAL_LLM_MODEL: 'claude-sonnet-4-20250514'
+          HEAL_LLM_API_KEY: ${{ secrets.HEAL_LLM_API_KEY }}
         continue-on-error: true  # publish report even when tests fail
 
       # ─── Generate Allure Report ───────────────────────────────────────────────
@@ -120,4 +125,11 @@ jobs:
         with:
           name: test-results-${{ github.run_number }}
           path: test-results/results.json
+          retention-days: 30
+      - name: Upload self-healing log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: healing-log-${{ github.run_number }}
+          path: healing-log.json
           retention-days: 30

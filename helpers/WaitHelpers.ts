@@ -1,99 +1,59 @@
 // helpers/WaitHelpers.ts
-import { Page, Locator } from '@playwright/test';
+// Generic, browser-level wait utilities.
+// No app-specific selectors belong here — those live in OrangeHRMControls.
+//
+// Timeouts: no DEFAULT_TIMEOUT constant — Playwright's global config governs all waits
+// (actionTimeout: 10_000, navigationTimeout: 30_000, set in playwright.config.ts).
+// Pass an explicit timeout only when a specific wait genuinely needs to deviate.
+import { Page, Locator, expect } from '@playwright/test';
 
 export class WaitHelpers {
 
-  private readonly page:             Page;
-  private readonly DEFAULT_TIMEOUT:  number = 10_000;
-
-  // OrangeHRM-specific selectors for common UI states
-  private readonly SPINNER_SELECTOR       = '.oxd-loading-spinner';
-  private readonly TOAST_SELECTOR         = '.oxd-toast-content';
-  private readonly DROPDOWN_OPTIONS       = '.oxd-select-options';
-  private readonly AUTOCOMPLETE_DROPDOWN  = '.oxd-autocomplete-dropdown';
+  private readonly page: Page;
 
   constructor(page: Page) {
     this.page = page;
   }
 
-  // ─── Spinner ──────────────────────────────────────────────────────────────────
+  // ─── Element State ────────────────────────────────────────────────────────────
 
-  async waitForSpinnerToDisappear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    const spinner = this.page.locator(this.SPINNER_SELECTOR);
-    try {
-      await spinner.waitFor({ state: 'hidden', timeout });
-    } catch {
-      // Spinner was not in the DOM — nothing to wait for
-    }
+  // Waits for an element to become visible in the DOM.
+  async waitForElement(locator: Locator, timeout?: number): Promise<void> {
+    await locator.waitFor({ state: 'visible', timeout });
   }
 
-  // ─── Table ────────────────────────────────────────────────────────────────────
-
-  async waitForTableToLoad(
-    tableLocator: Locator,
-    timeout = this.DEFAULT_TIMEOUT
-  ): Promise<void> {
-    await this.waitForSpinnerToDisappear(timeout);
-    const noRecords = this.page.getByText('No Records Found');
-    await Promise.race([
-      tableLocator.locator('role=row').first().waitFor({ state: 'visible', timeout }),
-      noRecords.waitFor({ state: 'visible', timeout }),
-    ]).catch(() => {
-      // If neither appears proceed — the assertion will catch it
-    });
+  // Waits for an element to disappear (hidden or detached).
+  async waitForElementToDisappear(locator: Locator, timeout?: number): Promise<void> {
+    await locator.waitFor({ state: 'hidden', timeout });
   }
 
-  // ─── Toast ────────────────────────────────────────────────────────────────────
-
-  async waitForToastToAppear(timeout = this.DEFAULT_TIMEOUT): Promise<Locator> {
-    const toast = this.page.locator(this.TOAST_SELECTOR);
-    await toast.waitFor({ state: 'visible', timeout });
-    return toast;
+  // Waits for an element to become enabled (not disabled).
+  async waitForElementToBeEnabled(locator: Locator, timeout?: number): Promise<void> {
+    await expect(locator).toBeEnabled({ timeout });
   }
 
-  async waitForToastToDisappear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    await this.waitForToastToAppear(timeout);
-    const toast = this.page.locator(this.TOAST_SELECTOR);
-    await toast.waitFor({ state: 'hidden', timeout });
+  // ─── Page / Network ───────────────────────────────────────────────────────────
+
+  // Waits for the network to reach idle state — no requests for 500ms.
+  // Useful after actions that trigger background API calls.
+  async waitForNetworkIdle(timeout?: number): Promise<void> {
+    await this.page.waitForLoadState('networkidle', { timeout });
   }
 
-  // ─── Dropdown ─────────────────────────────────────────────────────────────────
-
-  async waitForDropdownOptionsToAppear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    await this.page
-      .locator(this.DROPDOWN_OPTIONS)
-      .waitFor({ state: 'visible', timeout });
-  }
-
-  async waitForDropdownOptionsToDisappear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    await this.page
-      .locator(this.DROPDOWN_OPTIONS)
-      .waitFor({ state: 'hidden', timeout });
-  }
-
-  // ─── Autocomplete ─────────────────────────────────────────────────────────────
-
-  async waitForAutocompleteToAppear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    await this.page
-      .locator(this.AUTOCOMPLETE_DROPDOWN)
-      .waitFor({ state: 'visible', timeout });
-  }
-
-  async waitForAutocompleteToDisappear(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
-    await this.page
-      .locator(this.AUTOCOMPLETE_DROPDOWN)
-      .waitFor({ state: 'hidden', timeout });
-  }
-
-  // ─── URL ──────────────────────────────────────────────────────────────────────
-
-  async waitForURLChange(timeout = this.DEFAULT_TIMEOUT): Promise<void> {
+  // Waits for the page URL to change away from its current value.
+  // Useful after form submissions that trigger navigation.
+  async waitForURLChange(timeout?: number): Promise<void> {
     const currentURL = this.page.url();
     await this.page.waitForFunction(
       (url: string) => window.location.href !== url,
       currentURL,
       { timeout }
     );
+  }
+
+  // Waits for the page URL to match the given string or pattern.
+  async waitForURLToMatch(pattern: string | RegExp, timeout?: number): Promise<void> {
+    await this.page.waitForURL(pattern, { timeout });
   }
 
 }

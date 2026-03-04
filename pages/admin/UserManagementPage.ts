@@ -13,6 +13,7 @@ export class UserManagementPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
+
     this.pageHeading      = this.page.getByRole('heading', { name: 'System Users' })
                                      .describe('System users page heading');
     this.usernameInput    = this.page.getByRole('textbox').first()
@@ -34,14 +35,14 @@ export class UserManagementPage extends BasePage {
   }
 
   async clickAddUser(): Promise<void> {
-    await this.addButton.click();
+    await this.actions.click(this.addButton);
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
   async searchByUsername(username: string): Promise<void> {
-    await this.usernameInput.fill(username);
-    await this.searchButton.click();
+    await this.actions.fill(this.usernameInput, username);
+    await this.actions.click(this.searchButton);
     await this.waitForPageLoad();
   }
 
