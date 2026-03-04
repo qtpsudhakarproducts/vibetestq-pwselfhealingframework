@@ -1,23 +1,23 @@
 // tests/admin/user.spec.ts
 import { test, expect }    from '../../fixtures';
-import { generateEmployee, generateUser } from '../../data/generate';
+import { generateUser }    from '../../data/generate';
+import { UserData }        from '../../data/types';
 import { ApiClient, EmployeeApi } from '../../api';
-import { readEnv } from '../../data/readers';
+import { readRuntimeConfig } from '../../data/config';
 
 test.describe('Admin — User Management', () => {
 
-  const employee = generateEmployee();
-  const user     = generateUser(employee.fullName);
+  let user: UserData;
 
   test.beforeAll(async () => {
-    const env = readEnv();
     const client = await ApiClient.create(
-      env.baseURL,
-      env.adminUsername,
-      env.adminPassword
+      readRuntimeConfig().env.baseURL,
+      'playwright/.auth/admin.json'
     );
     const employeeApi = new EmployeeApi(client);
-    await employeeApi.createEmployee(employee);
+    const existing = await employeeApi.getFirst();
+    if (!existing) throw new Error('No employees found — cannot run user creation test');
+    user = generateUser(existing.fullName);
     await client.dispose();
   });
 

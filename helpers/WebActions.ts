@@ -2,6 +2,7 @@
 import { Page, Locator }                                   from '@playwright/test';
 import { ActionError, TimeoutError, ElementNotFoundError } from './errors';
 import { HealingEngine }                                   from './healing';
+import { readRuntimeConfig }                               from '../data/config';
 
 export class WebActions {
 
@@ -10,9 +11,10 @@ export class WebActions {
 
   constructor(page: Page) {
     this.page = page;
+    const runtime = readRuntimeConfig();
 
     // Healing is null locally — ENABLE_RUNTIME_HEALING is only set in CI pipeline
-    this.healing = process.env.ENABLE_RUNTIME_HEALING === 'true'
+    this.healing = runtime.healing.enabled
       ? new HealingEngine(page)
       : null;
   }
@@ -27,10 +29,12 @@ export class WebActions {
   private async execute<T>(
     action:  string,
     locator: Locator,
-    fn:      () => Promise<T>
+    perform: (target: Locator) => Promise<T>
   ): Promise<T> {
     try {
-      return await fn();
+      const result = await perform(locator);
+      console.log(`Action passed: ${action} on ${locator.description()}`);
+      return result;
     } catch (error) {
       const cause       = error as Error;
       const locatorDesc = locator.toString();
@@ -42,7 +46,14 @@ export class WebActions {
 
       // Runtime healing — CI only, actions only, ElementNotFoundError only
       if (isNotFound && this.healing) {
-        const healed = await this.healing.attempt(locator, fn);
+        const healed = await this.healing.attempt(
+          {
+            description: locator.description() ?? locator.toString(),
+            locator: locator.toString(),
+            error: cause.message,
+          },
+          perform
+        );
         if (healed !== null) return healed;
       }
 
@@ -66,7 +77,7 @@ export class WebActions {
   // Usage:
   //   await this.actions.click(this.saveButton);
   async click(locator: Locator): Promise<void> {
-    await this.execute('click', locator, () => locator.click());
+    await this.execute('click', locator, (target) => target.click());
   }
 
   // ─── Fill ─────────────────────────────────────────────────────────────────────
@@ -77,9 +88,22 @@ export class WebActions {
   // Usage:
   //   await this.actions.fill(this.firstNameInput, employee.firstName);
   async fill(locator: Locator, value: string): Promise<void> {
-    await this.execute('fill', locator, async () => {
-      await locator.clear();
-      await locator.fill(value);
+    await this.execute('fill', locator, async (target) => {
+      await target.clear();
+      await target.fill(value);
+    });
+  }
+
+  // Clears and types text one character at a time, triggering keydown/keyup events.
+  // Required for Vue autocomplete fields — locator.fill() does not fire the key
+  // events that Vue's @input/$watch listeners rely on to trigger suggestions.
+  //
+  // Usage:
+  //   await this.actions.typeSequentially(this.employeeNameInput, 'Fernando');
+  async typeSequentially(locator: Locator, value: string, delay = 50): Promise<void> {
+    await this.execute('type autocomplete search', locator, async (target) => {
+      await target.clear();
+      await target.pressSequentially(value, { delay });
     });
   }
 
@@ -87,12 +111,12 @@ export class WebActions {
 
   // Checks a checkbox. No-op if already checked.
   async check(locator: Locator): Promise<void> {
-    await this.execute('check', locator, () => locator.check());
+    await this.execute('check', locator, (target) => target.check());
   }
 
   // Unchecks a checkbox. No-op if already unchecked.
   async uncheck(locator: Locator): Promise<void> {
-    await this.execute('uncheck', locator, () => locator.uncheck());
+    await this.execute('uncheck', locator, (target) => target.uncheck());
   }
 
   // ─── Hover ────────────────────────────────────────────────────────────────────
@@ -100,7 +124,7 @@ export class WebActions {
   // Hovers over an element. Useful for revealing tooltip content or
   // triggering hover-state actions in the UI.
   async hover(locator: Locator): Promise<void> {
-    await this.execute('hover', locator, () => locator.hover());
+    await this.execute('hover', locator, (target) => target.hover());
   }
 
   // ─── Press Key ────────────────────────────────────────────────────────────────
@@ -108,7 +132,7 @@ export class WebActions {
   // Presses a keyboard key on a focused element.
   // Used for Tab (to confirm inputs), Enter (to submit), Escape (to dismiss).
   async pressKey(locator: Locator, key: string): Promise<void> {
-    await this.execute('pressKey', locator, () => locator.press(key));
+    await this.execute('pressKey', locator, (target) => target.press(key));
   }
 
   // ─── Select Option ────────────────────────────────────────────────────────────
@@ -117,7 +141,7 @@ export class WebActions {
   // OrangeHRM's custom Vue dropdowns are NOT native selects —
   // use selectFromDropdown() for those.
   async selectOption(locator: Locator, value: string): Promise<void> {
-    await this.execute('selectOption', locator, () => locator.selectOption(value));
+    await this.execute('selectOption', locator, (target) => target.selectOption(value));
   }
 
   // ─── Upload File ──────────────────────────────────────────────────────────────
@@ -125,8 +149,8 @@ export class WebActions {
   // Sets files on a file input element.
   // Works directly on standard file inputs without opening a file dialog.
   async uploadFile(inputLocator: Locator, filePath: string): Promise<void> {
-    await this.execute('uploadFile', inputLocator, () =>
-      inputLocator.setInputFiles(filePath)
+    await this.execute('uploadFile', inputLocator, (target) =>
+      target.setInputFiles(filePath)
     );
   }
 
@@ -135,8 +159,8 @@ export class WebActions {
   // Scrolls an element into the visible viewport.
   // Needed for long tables where target rows may be off-screen.
   async scrollIntoView(locator: Locator): Promise<void> {
-    await this.execute('scrollIntoView', locator, () =>
-      locator.scrollIntoViewIfNeeded()
+    await this.execute('scrollIntoView', locator, (target) =>
+      target.scrollIntoViewIfNeeded()
     );
   }
 
@@ -144,10 +168,10 @@ export class WebActions {
 
   // Clicks a button and waits for the URL to change.
   async clickAndWaitForNavigation(buttonLocator: Locator): Promise<void> {
-    await this.execute('clickAndWaitForNavigation', buttonLocator, () =>
+    await this.execute('clickAndWaitForNavigation', buttonLocator, (target) =>
       Promise.all([
         this.page.waitForNavigation({ waitUntil: 'networkidle' }),
-        buttonLocator.click(),
+        target.click(),
       ]).then(() => undefined)
     );
   }
@@ -155,7 +179,9 @@ export class WebActions {
   // Returns the number of rows currently visible in a table.
   async getTableRowCount(tableLocator: Locator): Promise<number> {
     const rows = tableLocator.getByRole('row');
-    return await rows.count();
+    const count = await rows.count();
+    console.log(`Action passed: getTableRowCount on ${tableLocator.description()} = ${count}`);
+    return count;
   }
 
 }

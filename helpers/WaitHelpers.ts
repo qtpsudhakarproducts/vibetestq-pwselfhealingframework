@@ -20,16 +20,19 @@ export class WaitHelpers {
   // Waits for an element to become visible in the DOM.
   async waitForElement(locator: Locator, timeout?: number): Promise<void> {
     await locator.waitFor({ state: 'visible', timeout });
+    console.log(`Waiting For: ${locator.description()} is visible`);
   }
 
   // Waits for an element to disappear (hidden or detached).
   async waitForElementToDisappear(locator: Locator, timeout?: number): Promise<void> {
     await locator.waitFor({ state: 'hidden', timeout });
+    console.log(`Waiting For: ${locator.description()} is hidden`);
   }
 
   // Waits for an element to become enabled (not disabled).
   async waitForElementToBeEnabled(locator: Locator, timeout?: number): Promise<void> {
     await expect(locator).toBeEnabled({ timeout });
+    console.log(`Waiting For: ${locator.description()} is enabled`);
   }
 
   // ─── Page / Network ───────────────────────────────────────────────────────────
@@ -38,6 +41,7 @@ export class WaitHelpers {
   // Useful after actions that trigger background API calls.
   async waitForNetworkIdle(timeout?: number): Promise<void> {
     await this.page.waitForLoadState('networkidle', { timeout });
+    console.log('Waiting For: page reached networkidle state');
   }
 
   // Waits for the page URL to change away from its current value.
@@ -49,11 +53,13 @@ export class WaitHelpers {
       currentURL,
       { timeout }
     );
+    console.log('Waiting For: URL changed');
   }
 
   // Waits for the page URL to match the given string or pattern.
   async waitForURLToMatch(pattern: string | RegExp, timeout?: number): Promise<void> {
     await this.page.waitForURL(pattern, { timeout });
+    console.log(`Waiting For: URL matched ${pattern.toString()}`);
   }
 
 }

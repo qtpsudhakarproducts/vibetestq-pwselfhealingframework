@@ -31,17 +31,14 @@ export class DashboardPage extends BasePage {
 
   async navigateToPIM(): Promise<void> {
     await this.actions.click(this.pimMenuItem);
-    await this.waitForPageLoad();
   }
 
   async navigateToAdmin(): Promise<void> {
     await this.actions.click(this.adminMenuItem);
-    await this.waitForPageLoad();
   }
 
   async navigateToLeave(): Promise<void> {
     await this.actions.click(this.leaveMenuItem);
-    await this.waitForPageLoad();
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -49,7 +46,6 @@ export class DashboardPage extends BasePage {
   async logout(): Promise<void> {
     await this.actions.click(this.userDropdown);
     await this.actions.click(this.logoutOption);
-    await this.waitForPageLoad();
   }
 
   // ─── Assertions ───────────────────────────────────────────────────────────────

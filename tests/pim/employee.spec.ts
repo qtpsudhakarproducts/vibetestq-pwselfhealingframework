@@ -2,18 +2,16 @@
 import { test, expect }    from '../../fixtures';
 import { generateEmployee } from '../../data/generate';
 import { ApiClient, EmployeeApi } from '../../api';
-import { readEnv } from '../../data/readers';
+import { readRuntimeConfig } from '../../data/config';
 
 test.describe('PIM — Employee Management', () => {
 
   const employee = generateEmployee(); // unique per run — no collisions on shared site
 
   test.beforeAll(async () => {
-    const env = readEnv();
     const client = await ApiClient.create(
-      env.baseURL,
-      env.adminUsername,
-      env.adminPassword
+      readRuntimeConfig().env.baseURL,
+      'playwright/.auth/admin.json'
     );
     const employeeApi = new EmployeeApi(client);
     await employeeApi.createEmployee(employee);

@@ -97,6 +97,49 @@ npm run report
 
 ---
 
+## Environment Configuration
+
+Runtime config is validated from environment variables (shell/CI).
+
+Sample files are available in `test-data/`:
+
+- `test-data/.env.dev.example`
+- `test-data/.env.qa.example`
+- `test-data/.env.staging.example`
+- `test-data/.env.prod.example`
+
+Required variables:
+
+- `BASE_URL`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `ESS_USERNAME`
+- `ESS_PASSWORD`
+
+Optional healing variables:
+
+- `ENABLE_RUNTIME_HEALING`
+- `HEAL_LLM_PROVIDER`
+- `HEAL_LLM_API_KEY`
+- `HEAL_LLM_MODEL`
+- `HEAL_MAX_CALLS`
+- `HEAL_MAX_CONSECUTIVE_FAILURES`
+
+PowerShell example (local run):
+
+```powershell
+Get-Content test-data/.env.dev.example |
+	Where-Object { $_ -and -not $_.StartsWith('#') } |
+	ForEach-Object {
+		$parts = $_ -split '=', 2
+		Set-Item -Path "Env:$($parts[0])" -Value $parts[1]
+	}
+
+npx playwright test
+```
+
+---
+
 ## Test Tags
 
 Every test carries exactly three tags — module, type, severity.

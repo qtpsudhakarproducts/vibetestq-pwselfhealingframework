@@ -24,7 +24,7 @@ export class EmployeeListPage extends BasePage {
                                       .describe('Add new employee button');
     this.employeeTable     = this.page.locator('.oxd-table-body')
                                       .describe('Employee records table body');
-    this.noRecordsMessage  = this.page.getByText('No Records Found')
+    this.noRecordsMessage  = this.page.locator('span', { hasText: 'No Records Found' })
                                       .describe('No records found message');
   }
 

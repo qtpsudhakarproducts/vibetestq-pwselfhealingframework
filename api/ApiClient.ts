@@ -18,47 +18,36 @@ export class ApiClient {
   }
 
   /**
-   * Creates an ApiClient using admin credentials.
-   * Uses Playwright's request context — completely independent of any browser page.
+   * Creates an ApiClient authenticated via a saved browser storage state file.
+   * OrangeHRM API v2 uses session cookies — Basic auth is not supported.
+   *
+   * Usage: await ApiClient.create(baseURL, 'playwright/.auth/admin.json');
    */
   static async create(
-    baseURL:  string,
-    username: string,
-    password: string
+    baseURL:          string,
+    storageStatePath: string
   ): Promise<ApiClient> {
-    const context = await request.newContext({ baseURL });
-
-    // OrangeHRM API uses HTTP Basic Authentication
-    const credentials = Buffer.from(`${username}:${password}`).toString('base64');
-    const authHeader  = `Basic ${credentials}`;
-
-    return new ApiClient(context, baseURL, authHeader);
+    const context = await request.newContext({ baseURL, storageState: storageStatePath });
+    return new ApiClient(context, baseURL, '');
   }
 
   // ─── HTTP Methods ─────────────────────────────────────────────────────────────
 
   async get(path: string): Promise<unknown> {
-    const response = await this.context.get(path, {
-      headers: { Authorization: this.authHeader },
-    });
+    const response = await this.context.get(path);
     return this.handleResponse(response, `GET ${path}`);
   }
 
   async post(path: string, body: unknown): Promise<unknown> {
     const response = await this.context.post(path, {
-      headers: {
-        Authorization:  this.authHeader,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       data: body,
     });
     return this.handleResponse(response, `POST ${path}`);
   }
 
   async delete(path: string): Promise<void> {
-    const response = await this.context.delete(path, {
-      headers: { Authorization: this.authHeader },
-    });
+    const response = await this.context.delete(path);
     if (!response.ok()) {
       throw new Error(
         `DELETE ${path} failed with status ${response.status()}: ${await response.text()}`

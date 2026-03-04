@@ -2,11 +2,15 @@
 import { test, expect } from '../fixtures';
 import { LoginPage }     from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
-import { readEnv } from '../data/readers';
+import { readEnv } from '../data/config';
 
 test.describe('Login', () => {
 
-  const env = readEnv();
+  let env: ReturnType<typeof readEnv>;
+
+  test.beforeAll(() => {
+    env = readEnv();
+  });
 
   test.use({ storageState: { cookies: [], origins: [] } }); // no auth for login tests
 

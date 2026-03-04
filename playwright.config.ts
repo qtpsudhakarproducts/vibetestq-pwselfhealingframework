@@ -1,11 +1,15 @@
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
-import { readEnv } from './data/readers';
+import { readRuntimeConfig } from './data/config';
 
-// Detect CI environment — affects workers, retries, and trace settings
-const isCI = !!process.env.CI;
-const env = readEnv();
+// Load .env for local development — CI always provides env vars directly
+if (!process.env.CI) {
+  try { process.loadEnvFile('.env'); } catch { /* .env is optional */ }
+}
+
+const runtime = readRuntimeConfig();
+const isCI = runtime.ci.isCI;
 
 export default defineConfig({
 
@@ -47,7 +51,7 @@ export default defineConfig({
       maxHistoryRuns:           20,
       performanceThreshold:     0.2,
       projectName:              'orangehrm-ui',
-      runId:                    process.env.GITHUB_RUN_ID,
+      runId:                    runtime.ci.runId,
 
       // Analysis features
       enableRetryAnalysis:      true,
@@ -77,7 +81,7 @@ export default defineConfig({
   // ─── Global Settings ────────────────────────────────────────────────────────
 
   use: {
-    baseURL: env.baseURL,
+    baseURL: runtime.env.baseURL,
     headless: true,
     viewport: { width: 1280, height: 720 },
     actionTimeout:     10_000,

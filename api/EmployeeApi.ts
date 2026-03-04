@@ -5,6 +5,7 @@ import { EmployeeData } from '../data/types';
 interface OrangeHRMEmployee {
   empNumber:  number;
   firstName:  string;
+  middleName: string;
   lastName:   string;
   employeeId: string;
 }
@@ -55,6 +56,28 @@ export class EmployeeApi {
     );
 
     return match ? match.empNumber : null;
+  }
+
+  /**
+   * Returns the first employee found on the system.
+   * Useful for tests that need an existing, already-indexed employee
+   * (freshly-created employees may not be searchable immediately via autocomplete).
+   */
+  async getFirst(): Promise<{ firstName: string; lastName: string; fullName: string } | null> {
+    const response = await this.client.get(
+      '/web/index.php/api/v2/pim/employees?limit=1&offset=0'
+    ) as EmployeeListResponse;
+    if (!response.data || response.data.length === 0) return null;
+    const emp = response.data[0];
+    // OrangeHRM renders the name as "firstName middleName lastName" (middleName may be empty).
+    // Build the display name exactly as OrangeHRM shows it in autocomplete options so the
+    // typed search text matches the selected option label — mismatches cause the "Invalid" error.
+    const parts = [emp.firstName, emp.middleName, emp.lastName].filter(Boolean);
+    return {
+      firstName: emp.firstName,
+      lastName:  emp.lastName,
+      fullName:  parts.join(' '),
+    };
   }
 
   /**

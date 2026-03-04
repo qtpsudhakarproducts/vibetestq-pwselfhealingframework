@@ -21,6 +21,9 @@ allure-report/
 # Test data secrets
 test-data/.env.*
 
+# Local credentials — never commit this
+.env
+
 # OS
 .DS_Store
 Thumbs.db

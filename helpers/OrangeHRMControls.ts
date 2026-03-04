@@ -16,7 +16,7 @@ export class OrangeHRMControls {
   // OrangeHRM Vue component selectors — all app-specific CSS lives here
   private readonly SPINNER_SELECTOR      = '.oxd-loading-spinner';
   private readonly TOAST_SELECTOR        = '.oxd-toast-content';
-  private readonly DROPDOWN_OPTIONS      = '.oxd-select-options';
+  private readonly DROPDOWN_OPTIONS      = '.oxd-select-dropdown';
   private readonly AUTOCOMPLETE_DROPDOWN = '.oxd-autocomplete-dropdown';
 
   // Receives the shared WebActions instance — no separate instantiation.
@@ -41,7 +41,7 @@ export class OrangeHRMControls {
     timeout?:     number
   ): Promise<void> {
     await this.waitForSpinnerToDisappear(timeout);
-    const noRecords = this.page.getByText('No Records Found');
+    const noRecords = this.page.locator('span', { hasText: 'No Records Found' });
     await Promise.race([
       tableLocator.locator('role=row').first().waitFor({ state: 'visible', timeout }),
       noRecords.waitFor({ state: 'visible', timeout }),
@@ -104,19 +104,32 @@ export class OrangeHRMControls {
   // Fills an OrangeHRM autocomplete field and selects the first matching suggestion.
   // Autocomplete suggestions load asynchronously — waits for the dropdown before clicking.
   //
+  // Uses pressSequentially (character-by-character) instead of fill() so that Vue's
+  // @keydown/@input watchers fire correctly and populate the suggestion dropdown.
+  // After selecting an option, waits for the Invalid validation error to clear,
+  // confirming the Vue model accepted the selection before proceeding.
+  //
   // Usage:
   //   await this.controls.fillAutocomplete(this.employeeNameInput, employee.fullName);
   async fillAutocomplete(inputLocator: Locator, searchText: string): Promise<void> {
-    await this.actions.fill(inputLocator, searchText);
+    // Type character-by-character to trigger Vue's @keydown/@input search watchers.
+    // locator.fill() only fires an `input` event and skips the key events that
+    // OrangeHRM's Vue autocomplete component needs to display suggestions.
+    await this.actions.typeSequentially(inputLocator, searchText);
     await this.waitForAutocompleteToAppear();
 
-    const firstOption = this.page
-      .locator('.oxd-autocomplete-option')
-      .first()
-      .describe(`First autocomplete option for "${searchText}"`);
-
-    await this.actions.click(firstOption);
+    // Use keyboard navigation to select the first option.
+    // Advantages over mouse click:
+    //   • ArrowDown + Enter is handled by Vue's own keyboard handler (@keydown),
+    //     guaranteeing the component updates its v-model correctly.
+    //   • Avoids a mousedown→blur→click race where blur can clear the selection
+    //     before the click handler sets it.
+    await this.actions.pressKey(inputLocator, 'ArrowDown');
+    await this.actions.pressKey(inputLocator, 'Enter');
     await this.waitForAutocompleteToDisappear();
+
+    // Allow Vue's reactivity to settle after selection before the caller proceeds.
+    await this.page.waitForTimeout(300);
   }
 
   // ─── Date Input ───────────────────────────────────────────────────────────────

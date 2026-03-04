@@ -72,7 +72,9 @@ export class AddUserPage extends BasePage {
 
   async saveUser(): Promise<void> {
     await this.actions.click(this.saveButton);
-    await this.controls.waitForToast();
+    // OrangeHRM redirects to the user list after a successful save —
+    // the toast appears too briefly to assert reliably, so wait for navigation.
+    await this.page.waitForURL(/viewSystemUsers/, { timeout: 15_000 });
   }
 
   async addUser(user: UserData): Promise<void> {
@@ -90,6 +92,8 @@ export class AddUserPage extends BasePage {
   async assertPageLoaded(): Promise<void> {
     await this.assertURL(/saveSystemUser/);
     await expect(this.pageHeading).toBeVisible();
+    // Wait for the dropdowns to be interactive — they render asynchronously on the demo site
+    await expect(this.userRoleDropdown).toBeVisible();
   }
 
   async assertUserSavedSuccessfully(): Promise<void> {

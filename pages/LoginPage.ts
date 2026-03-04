@@ -62,7 +62,9 @@ export class LoginPage extends BasePage {
   }
 
   async assertUsernameRequiredError(): Promise<void> {
-    await expect(this.errorMessage).toBeVisible();
-    await expect(this.errorMessage).toContainText('Username cannot be empty');
+    // Empty username triggers inline field validation, not the global alert box
+    const fieldError = this.page.locator('.oxd-input-field-error-message').first();
+    await expect(fieldError).toBeVisible();
+    await expect(fieldError).toContainText('Required');
   }
 }

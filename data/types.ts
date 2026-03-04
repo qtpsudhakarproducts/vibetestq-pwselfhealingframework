@@ -41,6 +41,26 @@ export interface EnvConfig {
   essPassword:   string;
 }
 
+export interface HealingConfig {
+  enabled:                boolean;
+  provider:               'anthropic' | 'openai' | 'gemini';
+  apiKey:                 string;
+  model:                  string;
+  maxCalls:               number;
+  maxConsecutiveFailures: number;
+}
+
+export interface RuntimeConfig {
+  env:   {
+    baseURL: string;
+  };
+  ci:    {
+    isCI:  boolean;
+    runId?: string;
+  };
+  healing: HealingConfig;
+}
+
 // ─── Leave Policy ─────────────────────────────────────────────────────────────
 
 export interface LeavePolicy {
