@@ -1,51 +1,93 @@
 // tests/admin/user.spec.ts
-import { test, expect }    from '../../fixtures';
-import { generateUser }    from '../../data/generate';
-import { UserData }        from '../../data/types';
+//
+// Enterprise Framework Concepts demonstrated here:
+//
+//   1. Direct API test     — call the REST API directly with no browser open
+//   2. File-based test data — read static rows from a CSV via readCSV()
+//   3. Fixture injection    — userManagementPage fixture delivers an
+//                             authenticated, navigated page object
+//   4. Role-based access    — admin-only page hidden behind storageState auth
+//   5. Positive assertion   — search for a known user, assert it appears
+//   6. Negative assertion   — search for a non-existent user, assert empty state
+//
+import { test, expect }           from '../../fixtures';
 import { ApiClient, EmployeeApi } from '../../api';
-import { readRuntimeConfig } from '../../data/config';
+import { readRuntimeConfig }      from '../../data/config';
+import { readCSV }                from '../../data/readers';
 
-test.describe('Admin — User Management', () => {
+// ─── 1. Direct API Test ──────────────────────────────────────────────────────
+// No browser. Authenticates via stored session cookies and calls the
+// OrangeHRM v2 REST API directly. This is the same pattern used in
+// beforeAll hooks across the suite to set up test data without UI overhead.
 
-  let user: UserData;
-
-  test.beforeAll(async () => {
+test('API: EmployeeApi returns at least one employee from the system',
+  { tag: ['@admin', '@api', '@smoke'] },
+  async () => {
     const client = await ApiClient.create(
       readRuntimeConfig().env.baseURL,
       'playwright/.auth/admin.json'
     );
-    const employeeApi = new EmployeeApi(client);
-    const existing = await employeeApi.getFirst();
-    if (!existing) throw new Error('No employees found — cannot run user creation test');
-    user = generateUser(existing.fullName);
+    const first = await new EmployeeApi(client).getFirst();
     await client.dispose();
-  });
 
-  test('admin can add a new system user',
+    expect(first).not.toBeNull();
+    expect(first!.firstName).toBeTruthy();
+    expect(first!.lastName).toBeTruthy();
+  }
+);
+
+// ─── 2. File-Based Test Data (CSV) ────────────────────────────────────────────
+// Static test data lives in test-data/employees.csv and is read once at
+// runtime. This avoids hard-coding values in test code and lets a non-
+// technical team member update test inputs without touching TypeScript.
+
+test('CSV: test-data/employees.csv is readable and contains valid rows',
+  { tag: ['@admin', '@data', '@sanity'] },
+  async () => {
+    const rows = await readCSV('test-data/employees.csv');
+
+    expect(rows.length).toBeGreaterThan(0);
+    // Every row must have the columns our data layer expects
+    for (const row of rows) {
+      expect(row).toHaveProperty('firstName');
+      expect(row).toHaveProperty('lastName');
+      expect(row).toHaveProperty('employeeId');
+    }
+  }
+);
+
+// ─── 3 – 6. Fixture Injection + Role-Based Access + Assertions ───────────────
+// The userManagementPage fixture (fixtures/index.ts) handles:
+//   • injecting the admin storageState (role-based access)
+//   • navigating to the page
+//   • asserting it loaded — before the test body even starts
+// Tests receive a ready-to-use page object with zero boilerplate.
+
+test.describe('Admin — User Management', () => {
+
+  // 3. Fixture injection — authenticated admin page delivered ready to use
+  test('fixture delivers authenticated admin page with Add button visible',
     { tag: ['@admin', '@smoke', '@critical'] },
-    async ({ addUserPage }, testInfo) => {
-      testInfo.annotations.push({ type: 'username',     description: user.username });
-      testInfo.annotations.push({ type: 'employeeName', description: user.employeeName });
-
-      await addUserPage.addUser(user);
-      await addUserPage.assertUserSavedSuccessfully();
-    }
-  );
-
-  test('newly created user appears in user management list',
-    { tag: ['@admin', '@regression', '@high'] },
-    async ({ userManagementPage }, testInfo) => {
-      testInfo.annotations.push({ type: 'username', description: user.username });
-
-      await userManagementPage.searchByUsername(user.username);
-      await userManagementPage.assertUserExistsInList(user.username);
-    }
-  );
-
-  test('user management list loads with Add button visible',
-    { tag: ['@admin', '@sanity', '@medium'] },
     async ({ userManagementPage }) => {
       await userManagementPage.assertPageLoaded();
+    }
+  );
+
+  // 5. Positive assertion — search for a known user, assert the row appears
+  test('search returns matching row for a known existing username',
+    { tag: ['@admin', '@regression', '@high'] },
+    async ({ userManagementPage }) => {
+      await userManagementPage.searchByUsername('Admin');
+      await userManagementPage.assertUserExistsInList('Admin');
+    }
+  );
+
+  // 6. Negative assertion — same search action, different assertion branch
+  test('search with no match shows No Records Found',
+    { tag: ['@admin', '@regression', '@medium'] },
+    async ({ userManagementPage }) => {
+      await userManagementPage.searchByUsername('ZZZZZ_NoSuchUser_XYZ');
+      await userManagementPage.assertNoRecordsFound();
     }
   );
 

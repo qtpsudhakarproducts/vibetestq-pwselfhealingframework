@@ -72,11 +72,14 @@ export class EmployeeApi {
     // OrangeHRM renders the name as "firstName middleName lastName" (middleName may be empty).
     // Build the display name exactly as OrangeHRM shows it in autocomplete options so the
     // typed search text matches the selected option label — mismatches cause the "Invalid" error.
-    const parts = [emp.firstName, emp.middleName, emp.lastName].filter(Boolean);
+    // OrangeHRM renders the employee name in autocomplete options as:
+    //   firstName + " " + middleName + " " + lastName
+    // even when middleName is empty — producing a double space.
+    // We must search with the exact same string so the blur-time text comparison passes.
     return {
       firstName: emp.firstName,
       lastName:  emp.lastName,
-      fullName:  parts.join(' '),
+      fullName:  `${emp.firstName} ${emp.middleName} ${emp.lastName}`.trim(),
     };
   }
 

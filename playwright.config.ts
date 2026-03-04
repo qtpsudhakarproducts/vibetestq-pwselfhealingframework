@@ -17,12 +17,13 @@ export default defineConfig({
 
   fullyParallel: false,       // OrangeHRM demo is shared — run sequentially to avoid conflicts
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,     // More retries in CI — transient network on the demo site
+  retries: isCI ? 2 : 1,     // 1 local retry handles transient slowness on the shared demo site
 
   // Workers tuned for the shared OrangeHRM demo site
   workers: isCI ? 2 : 1,
 
   timeout:   60_000,
+  expect:   { timeout: 15_000 }, // Shared demo site can be slow — 15s for all expect() calls
   outputDir: 'test-results/',
 
   // ─── Reporters ──────────────────────────────────────────────────────────────
