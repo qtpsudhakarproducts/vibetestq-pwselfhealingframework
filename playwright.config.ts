@@ -19,8 +19,9 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 1,     // 1 local retry handles transient slowness on the shared demo site
 
-  // Workers tuned for the shared OrangeHRM demo site
-  workers: isCI ? 2 : 1,
+  // Workers: controlled by PLAYWRIGHT_WORKERS env var (default 1).
+  // Increase for dedicated environments — keep at 1 for the shared demo site.
+  workers: isCI ? 2 : runtime.env.workers,
 
   timeout:   60_000,
   expect:   { timeout: 15_000 }, // Shared demo site can be slow — 15s for all expect() calls

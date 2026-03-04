@@ -6,7 +6,8 @@ import { readRuntimeConfig } from '../../data/config';
 
 test.describe('PIM — Employee Management', () => {
 
-  const employee = generateEmployee(); // unique per run — no collisions on shared site
+  const employee  = generateEmployee(); // unique per run — no collisions on shared site
+  let   empNumber = 0;                  // recorded in beforeAll, used in afterAll for cleanup
 
   test.beforeAll(async () => {
     const client = await ApiClient.create(
@@ -14,7 +15,21 @@ test.describe('PIM — Employee Management', () => {
       'playwright/.auth/admin.json'
     );
     const employeeApi = new EmployeeApi(client);
-    await employeeApi.createEmployee(employee);
+    empNumber = await employeeApi.createEmployee(employee);
+    await client.dispose();
+  });
+
+  // ─── Gap 1: Teardown ──────────────────────────────────────────────────
+  // Delete the API-created employee after all tests finish.
+  // This keeps the shared OrangeHRM demo site clean between runs —
+  // without teardown, test employees accumulate and pollute search results.
+  test.afterAll(async () => {
+    if (!empNumber) return; // nothing created (beforeAll failed or was skipped)
+    const client = await ApiClient.create(
+      readRuntimeConfig().env.baseURL,
+      'playwright/.auth/admin.json'
+    );
+    await new EmployeeApi(client).deleteEmployee(empNumber);
     await client.dispose();
   });
 

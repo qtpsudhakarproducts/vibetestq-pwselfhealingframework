@@ -104,10 +104,13 @@ export class OrangeHRMControls {
   // Fills an OrangeHRM autocomplete field and selects the first matching suggestion.
   // Autocomplete suggestions load asynchronously — waits for the dropdown before clicking.
   //
-  // Uses pressSequentially (character-by-character) instead of fill() so that Vue's
-  // @keydown/@input watchers fire correctly and populate the suggestion dropdown.
-  // After selecting an option, waits for the Invalid validation error to clear,
-  // confirming the Vue model accepted the selection before proceeding.
+  // Implementation note (Gap 5 — known fragility):
+  // The selection uses ArrowDown + Enter (keyboard) rather than mouse click.
+  // OrangeHRM's Vue autocomplete uses @mousedown.prevent on each option, which means
+  // Playwright's click() fires a real mousedown that triggers input blur BEFORE the
+  // @click handler can set the Vue model — leaving the field as "Invalid".
+  // Keyboard navigation bypasses this race. If selection breaks after an OrangeHRM
+  // upgrade, check whether @keydown handlers are still attached to the dropdown.
   //
   // Usage:
   //   await this.controls.fillAutocomplete(this.employeeNameInput, employee.fullName);

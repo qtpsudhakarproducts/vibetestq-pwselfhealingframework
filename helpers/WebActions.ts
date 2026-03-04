@@ -13,8 +13,9 @@ export class WebActions {
     this.page = page;
     const runtime = readRuntimeConfig();
 
-    // Healing is null locally — ENABLE_RUNTIME_HEALING is only set in CI pipeline
-    this.healing = runtime.healing.enabled
+    // Full healing: ENABLE_RUNTIME_HEALING=true (CI) — calls LLM, updates locator, logs result.
+    // Dry-run:      HEAL_DRY_RUN=true (local)  — logs which locators would be healed, no LLM calls.
+    this.healing = (runtime.healing.enabled || runtime.healing.dryRun)
       ? new HealingEngine(page)
       : null;
   }

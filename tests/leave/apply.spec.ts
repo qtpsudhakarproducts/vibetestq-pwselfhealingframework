@@ -24,16 +24,20 @@ test.describe('Leave — Apply (ESS User)', () => {
   // 3. Field-level assertions — verify the actual form inputs are rendered,
   // not just the page title. Catches regressions where the layout loads
   // but the Vue component fails to mount its form fields.
-  test('apply leave form renders date input fields',
+  //
+  // Note: date inputs (.oxd-date-input) only appear after a Leave Type is selected
+  // (OrangeHRM conditionally renders them). We assert the always-present fields:
+  // the Leave Type dropdown, comment textarea, and Apply button.
+  test('apply leave form renders required form fields',
     { tag: ['@leave', '@regression', '@medium'] },
     async ({ applyLeavePage, page }) => {
-      const fromDate = page.getByPlaceholder('yyyy-dd-mm').first();
-      const toDate   = page.getByPlaceholder('yyyy-dd-mm').nth(1);
-      const apply    = page.getByRole('button', { name: 'Apply' });
+      const leaveTypeDropdown = page.locator('.oxd-select-text').first();
+      const commentBox        = page.locator('textarea.oxd-textarea');
+      const applyButton       = page.getByRole('button', { name: 'Apply' });
 
-      await expect(fromDate).toBeVisible();
-      await expect(toDate).toBeVisible();
-      await expect(apply).toBeVisible();
+      await expect(leaveTypeDropdown).toBeVisible();
+      await expect(commentBox).toBeVisible();
+      await expect(applyButton).toBeVisible();
     }
   );
 

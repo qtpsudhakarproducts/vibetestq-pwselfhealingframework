@@ -43,6 +43,7 @@ export interface EnvConfig {
 
 export interface HealingConfig {
   enabled:                boolean;
+  dryRun:                 boolean;  // log would-heal entries without making LLM calls
   provider:               'anthropic' | 'openai' | 'gemini';
   apiKey:                 string;
   model:                  string;
@@ -53,6 +54,7 @@ export interface HealingConfig {
 export interface RuntimeConfig {
   env:   {
     baseURL: string;
+    workers: number;  // override via PLAYWRIGHT_WORKERS for dedicated environments
   };
   ci:    {
     isCI:  boolean;

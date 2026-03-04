@@ -19,9 +19,9 @@ export class ApplyLeavePage extends BasePage {
                                       .describe('Apply leave page heading');
     this.leaveTypeDropdown = this.page.locator('.oxd-select-text').first()
                                       .describe('Leave type dropdown');
-    this.fromDateInput     = this.page.getByPlaceholder('yyyy-dd-mm').first()
+    this.fromDateInput     = this.page.locator('.oxd-date-input input').first()
                                       .describe('Leave from date input');
-    this.toDateInput       = this.page.getByPlaceholder('yyyy-dd-mm').nth(1)
+    this.toDateInput       = this.page.locator('.oxd-date-input input').nth(1)
                                       .describe('Leave to date input');
     this.commentInput      = this.page.locator('textarea.oxd-textarea')
                                       .describe('Leave application comment textarea');

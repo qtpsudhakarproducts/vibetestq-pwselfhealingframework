@@ -28,14 +28,20 @@ export class EmployeeApi {
    * Returns the empNumber assigned by the system — required to create a linked user.
    */
   async createEmployee(employee: EmployeeData): Promise<number> {
-    const response = await this.client.post(
+    const raw = await this.client.post(
       '/web/index.php/api/v2/pim/employees',
       {
         firstName:  employee.firstName,
         lastName:   employee.lastName,
         employeeId: employee.employeeId,
       }
-    ) as { data: OrangeHRMEmployee };
+    );
+    // Gap 4: validate the API response shape before accessing nested fields.
+    // If OrangeHRM changes its response structure this throws immediately here
+    // rather than as a confusing TypeError deep in test code.
+    const response = ApiClient.assertResponseShape<{ data: OrangeHRMEmployee }>(
+      raw, ['data'], 'POST /api/v2/pim/employees'
+    );
 
     return response.data.empNumber;
   }
@@ -64,10 +70,13 @@ export class EmployeeApi {
    * (freshly-created employees may not be searchable immediately via autocomplete).
    */
   async getFirst(): Promise<{ firstName: string; lastName: string; fullName: string } | null> {
-    const response = await this.client.get(
+    const raw = await this.client.get(
       '/web/index.php/api/v2/pim/employees?limit=1&offset=0'
-    ) as EmployeeListResponse;
-    if (!response.data || response.data.length === 0) return null;
+    );
+    const response = ApiClient.assertResponseShape<EmployeeListResponse>(
+      raw, ['data', 'meta'], 'GET /api/v2/pim/employees'
+    );
+    if (response.data.length === 0) return null;
     const emp = response.data[0];
     // OrangeHRM renders the name as "firstName middleName lastName" (middleName may be empty).
     // Build the display name exactly as OrangeHRM shows it in autocomplete options so the
@@ -85,11 +94,13 @@ export class EmployeeApi {
 
   /**
    * Deletes an employee by empNumber.
-   * Used in test teardown to clean up created employees.
+   * OrangeHRM v2 API only exposes a bulk-delete endpoint — individual DELETE
+   * by ID returns 405.  Passing a single-element array handles the teardown case.
    */
   async deleteEmployee(empNumber: number): Promise<void> {
     await this.client.delete(
-      `/web/index.php/api/v2/pim/employees/${empNumber}`
+      '/web/index.php/api/v2/pim/employees',
+      { ids: [empNumber] }
     );
   }
 

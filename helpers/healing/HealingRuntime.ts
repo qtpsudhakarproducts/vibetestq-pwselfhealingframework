@@ -46,9 +46,10 @@ export class HealingLogger {
 export class HealingEngine {
 
   private readonly page: Page;
-  private readonly adapter: LLMAdapter;
+  private readonly adapter: LLMAdapter | null;  // null in dry-run mode
   private readonly logger: HealingLogger;
   private readonly provider: string;
+  private readonly dryRun: boolean;
 
   private readonly maxLLMCalls: number;
   private readonly maxConsecutiveFailures: number;
@@ -58,9 +59,12 @@ export class HealingEngine {
 
   constructor(page: Page) {
     const healing = readRuntimeConfig().healing;
-    this.page = page;
-    this.adapter = createLLMAdapter();
-    this.logger = new HealingLogger();
+    this.page    = page;
+    this.dryRun  = healing.dryRun;
+    // Adapter (LLM client) is only needed for full healing — skip in dry-run to avoid
+    // requiring HEAL_LLM_API_KEY when the developer just wants to observe failures.
+    this.adapter = healing.dryRun ? null : createLLMAdapter();
+    this.logger  = new HealingLogger();
     this.provider = healing.provider;
     this.maxLLMCalls = healing.maxCalls;
     this.maxConsecutiveFailures = healing.maxConsecutiveFailures;
@@ -74,6 +78,31 @@ export class HealingEngine {
     const locator = context.locator;
     const url = this.page.url();
     const cacheKey = `${url}|${locator}`;
+
+    // ─── Dry-run short-circuit ────────────────────────────────────────────────────
+    // HEAL_DRY_RUN=true: log what would trigger healing without making LLM calls.
+    // Developers run this locally to discover fragile locators before enabling
+    // full healing in CI. Results go into healing-log.json for review.
+    if (this.dryRun) {
+      this.logger.append({
+        description,
+        original: locator,
+        suggested: '',
+        action: 'dry-run',
+        timestamp: new Date().toISOString(),
+        status: 'skipped',
+        reason: 'HEAL_DRY_RUN=true — healing logged but not executed',
+        url,
+      });
+      console.warn(
+        `[HealingEngine] DRY RUN — locator failed, would attempt healing:\n` +
+        `  Description: ${description}\n` +
+        `  Failed:      ${locator}\n` +
+        `  URL:         ${url}\n` +
+        `  → Set ENABLE_RUNTIME_HEALING=true with HEAL_LLM_API_KEY to activate.`
+      );
+      return null;
+    }
 
     if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
       this.logger.append({
@@ -134,7 +163,7 @@ export class HealingEngine {
 
       this.llmCalls += 1;
       const startedAt = Date.now();
-      const suggestion = await this.adapter.suggestLocator({
+      const suggestion = await this.adapter!.suggestLocator({
         description,
         locator,
         error: context.error,

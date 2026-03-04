@@ -34,6 +34,9 @@ export function readRuntimeConfig(): RuntimeConfig {
   const runtime: RuntimeConfig = {
     env: {
       baseURL: process.env.BASE_URL ?? DEFAULT_BASE_URL,
+      // PLAYWRIGHT_WORKERS lets teams run parallel on a dedicated environment.
+      // Default is 1 — the shared demo site requires sequential execution.
+      workers: parsePositiveInt(process.env.PLAYWRIGHT_WORKERS, 1, 'PLAYWRIGHT_WORKERS'),
     },
     ci: {
       isCI:  process.env.CI === 'true',
@@ -41,6 +44,9 @@ export function readRuntimeConfig(): RuntimeConfig {
     },
     healing: {
       enabled:                process.env.ENABLE_RUNTIME_HEALING === 'true',
+      // dryRun: intercepts failing locators and logs what would be healed — no LLM calls.
+      // Useful locally to see which selectors are fragile before enabling full healing.
+      dryRun:                 process.env.HEAL_DRY_RUN === 'true',
       provider,
       apiKey:                 process.env.HEAL_LLM_API_KEY ?? '',
       model:                  process.env.HEAL_LLM_MODEL ?? DEFAULT_HEALING_MODELS[provider],

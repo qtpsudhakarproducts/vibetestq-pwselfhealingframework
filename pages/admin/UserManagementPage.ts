@@ -54,12 +54,18 @@ export class UserManagementPage extends BasePage {
   }
 
   async assertUserExistsInList(username: string): Promise<void> {
+    // .first() avoids strict mode violation when multiple rows contain the username
+    // text (e.g. searching "Admin" matches rows whose User Role column = "Admin")
     await expect(
-      this.userTable.getByRole('row', { name: new RegExp(username, 'i') })
+      this.userTable.getByRole('row', { name: new RegExp(username, 'i') }).first()
     ).toBeVisible();
   }
 
   async assertNoRecordsFound(): Promise<void> {
-    await expect(this.noRecordsMessage).toBeVisible();
+    // Vue re-renders the table asynchronously; waiting for 0 rows is more reliable
+    // than getByText('No Records Found') which appears only after the transition.
+    await expect(
+      this.userTable.getByRole('row')
+    ).toHaveCount(0);
   }
 }
