@@ -3,6 +3,7 @@
 // For environment variables and runtime config, see data/config.ts
 import * as fs   from 'fs';
 import * as path from 'path';
+import { parse } from 'csv-parse/sync';
 import { LeavePolicy } from './types';
 
 // ─── Test Data File Readers ──────────────────────────────────────────────────
@@ -11,16 +12,15 @@ import { LeavePolicy } from './types';
  * Reads a CSV file from disk and returns it as an array of objects.
  * Column headers become the object keys.
  *
- * Usage: const employees = await readCSV('test-data/employees.csv');
+ * Usage: const employees = readCSV('test-data/employees.csv');
  */
-export async function readCSV(filePath: string): Promise<Record<string, string>[]> {
+export function readCSV(filePath: string): Record<string, string>[] {
   const absolutePath = path.resolve(filePath);
   if (!fs.existsSync(absolutePath)) {
     throw new Error(`CSV file not found: ${absolutePath}`);
   }
 
-  const { parse } = await import('csv-parse/sync');
-  const content   = fs.readFileSync(absolutePath, 'utf-8');
+  const content = fs.readFileSync(absolutePath, 'utf-8');
   return parse(content, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
 }
 
@@ -48,8 +48,11 @@ export function readJSON<T>(filePath: string): T {
  * Falls back to built-in defaults when the file is not present.
  */
 export function readLeavePolicy(): LeavePolicy {
-  const policyPath = 'test-data/leave-policy.json';
+  const policyPath = path.resolve('test-data/leave-policy.json');
   if (!fs.existsSync(policyPath)) {
+    if (process.env.CI) {
+      throw new Error(`leave-policy.json missing in CI — commit test-data/leave-policy.json to the repository`);
+    }
     return {
       leaveTypes:           ['Annual Leave', 'Casual Leave', 'Medical Leave'],
       maxConsecutiveDays:   5,

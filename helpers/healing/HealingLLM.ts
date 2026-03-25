@@ -1,4 +1,5 @@
 // helpers/healing/HealingLLM.ts
+import { Ollama } from 'ollama';
 import { readRuntimeConfig } from '../../data/config';
 
 export type HealingContext = {
@@ -136,17 +137,50 @@ class GeminiAdapter implements LLMAdapter {
 
 }
 
+class OllamaCloudAdapter implements LLMAdapter {
+
+  private readonly apiKey: string;
+  private readonly model: string;
+  private readonly host: string;
+
+  constructor() {
+    const healing = readRuntimeConfig().healing;
+    this.apiKey = healing.apiKey;
+    this.model  = healing.model;
+    this.host   = healing.ollamaHost ?? 'https://ollama.com';
+  }
+
+  async suggestLocator(context: HealingContext): Promise<string | null> {
+    const client = new Ollama({
+      host: this.host,
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+    });
+
+    const res = await client.chat({
+      model: this.model,
+      messages: [{ role: 'user', content: buildPrompt(context) }],
+      options: { temperature: 0 },
+    });
+
+    return res.message?.content?.trim() ?? null;
+  }
+
+}
+
 export function createLLMAdapter(): LLMAdapter {
   const provider = readRuntimeConfig().healing.provider;
 
   switch (provider) {
-    case 'anthropic': return new AnthropicAdapter();
-    case 'openai': return new OpenAIAdapter();
-    case 'gemini': return new GeminiAdapter();
+    case 'anthropic':    return new AnthropicAdapter();
+    case 'openai':       return new OpenAIAdapter();
+    case 'gemini':       return new GeminiAdapter();
+    case 'ollama-cloud': return new OllamaCloudAdapter();
     default:
       throw new Error(
         `HEAL_LLM_PROVIDER "${provider}" is not supported.\n` +
-        `Supported values: anthropic, openai, gemini`
+        `Supported values: anthropic, openai, gemini, ollama-cloud`
       );
   }
 }

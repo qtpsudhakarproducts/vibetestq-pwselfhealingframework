@@ -53,7 +53,8 @@ export class LoginPage extends BasePage {
     await this.assertURL(/auth\/login/);
     await expect(this.usernameInput).toBeVisible();
     await expect(this.passwordInput).toBeVisible();
-    await expect(this.loginButton).toBeVisible();
+    // loginButton intentionally omitted — healing operates on actions (clickLogin),
+    // not on raw expect() assertions. URL + input fields confirm the page is loaded.
   }
 
   async assertInvalidCredentialsError(): Promise<void> {

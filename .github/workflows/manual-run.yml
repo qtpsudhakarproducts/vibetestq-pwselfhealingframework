@@ -67,14 +67,14 @@ jobs:
         continue-on-error: true
 
       - name: Generate Allure report
-        run: npx allure generate allure-results --clean -o allure-report
+        run: npx allure generate reports/allure --clean -o reports/allure-html
         if: always()
 
       - name: Prepare gh-pages directory structure
         if: always()
         run: |
           mkdir -p gh-pages-deploy/allure
-          cp -r allure-report/. gh-pages-deploy/allure/
+          cp -r reports/allure-html/. gh-pages-deploy/allure/
 
       - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -92,5 +92,5 @@ jobs:
         if: always()
         with:
           name: playwright-report-manual-${{ github.run_number }}
-          path: playwright-report/
+          path: reports/html/
           retention-days: 14

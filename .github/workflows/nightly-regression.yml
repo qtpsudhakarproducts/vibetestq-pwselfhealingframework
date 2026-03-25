@@ -59,12 +59,12 @@ jobs:
       - name: Copy Allure history from previous run
         run: |
           if [ -d "gh-pages/allure/history" ]; then
-            mkdir -p allure-results/history
-            cp -r gh-pages/allure/history allure-results/
+            mkdir -p reports/allure/history
+            cp -r gh-pages/allure/history reports/allure/
             echo "✅ Allure history restored from previous run"
           elif [ -d "gh-pages/history" ]; then
-            mkdir -p allure-results/history
-            cp -r gh-pages/history allure-results/
+            mkdir -p reports/allure/history
+            cp -r gh-pages/history reports/allure/
             echo "✅ Allure history restored (legacy path)"
           else
             echo "ℹ️  No previous history found — first run baseline"
@@ -87,16 +87,16 @@ jobs:
       # ─── Generate Allure Report ───────────────────────────────────────────────
 
       - name: Generate Allure HTML report
-        run: npx allure generate allure-results --clean -o allure-report
+        run: npx allure generate reports/allure --clean -o reports/allure-html
         if: always()
 
-      # ─── Publish to GitHub Pages ──────────────────────────────────────────────
+      # ─── Publish to GitHub Pages ────────────────────────────────────────────
 
       - name: Prepare gh-pages directory structure
         if: always()
         run: |
           mkdir -p gh-pages-deploy/allure
-          cp -r allure-report/. gh-pages-deploy/allure/
+          cp -r reports/allure-html/. gh-pages-deploy/allure/
 
       - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -116,7 +116,7 @@ jobs:
         if: always()
         with:
           name: playwright-report-nightly-${{ github.run_number }}
-          path: playwright-report/
+          path: reports/html/
           retention-days: 30
 
       - name: Upload test results JSON

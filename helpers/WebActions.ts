@@ -43,7 +43,10 @@ export class WebActions {
       const isNotFound =
         cause.message.includes('not found')   ||
         cause.message.includes('not visible') ||
-        cause.message.includes('not attached');
+        cause.message.includes('not attached') ||
+        // Playwright emits TimeoutError when waiting for a locator that never appears
+        // — treat these the same as "not found" so the healing engine can step in.
+        (cause.message.includes('Timeout') && cause.message.includes('waiting for'));
 
       // Runtime healing — CI only, actions only, ElementNotFoundError only
       if (isNotFound && this.healing) {

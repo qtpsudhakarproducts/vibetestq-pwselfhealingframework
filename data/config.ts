@@ -6,9 +6,10 @@ import { EnvConfig, RuntimeConfig } from './types';
 
 const DEFAULT_BASE_URL = 'https://opensource-demo.orangehrmlive.com';
 const DEFAULT_HEALING_MODELS = {
-  anthropic: 'claude-sonnet-4-20250514',
-  openai:    'gpt-4o',
-  gemini:    'gemini-1.5-flash',
+  anthropic:      'claude-sonnet-4-20250514',
+  openai:         'gpt-4o',
+  gemini:         'gemini-1.5-flash',
+  'ollama-cloud': 'gemma3:4b',
 } as const;
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -24,12 +25,19 @@ const DEFAULT_HEALING_MODELS = {
  */
 export function readRuntimeConfig(): RuntimeConfig {
   const provider = process.env.HEAL_LLM_PROVIDER ?? 'openai';
-  if (provider !== 'anthropic' && provider !== 'openai' && provider !== 'gemini') {
+  if (
+    provider !== 'anthropic'    &&
+    provider !== 'openai'       &&
+    provider !== 'gemini'       &&
+    provider !== 'ollama-cloud'
+  ) {
     throw new Error(
       `HEAL_LLM_PROVIDER "${provider}" is not supported. ` +
-      `Supported values: anthropic, openai, gemini`
+      `Supported values: anthropic, openai, gemini, ollama-cloud`
     );
   }
+
+  const isOllama = provider === 'ollama-cloud';
 
   const runtime: RuntimeConfig = {
     env: {
@@ -48,8 +56,13 @@ export function readRuntimeConfig(): RuntimeConfig {
       // Useful locally to see which selectors are fragile before enabling full healing.
       dryRun:                 process.env.HEAL_DRY_RUN === 'true',
       provider,
-      apiKey:                 process.env.HEAL_LLM_API_KEY ?? '',
-      model:                  process.env.HEAL_LLM_MODEL ?? DEFAULT_HEALING_MODELS[provider],
+      apiKey:                 isOllama
+        ? (process.env.OLLAMA_CLOUD_API_KEY ?? '')
+        : (process.env.HEAL_LLM_API_KEY ?? ''),
+      model:                  isOllama
+        ? (process.env.OLLAMA_CLOUD_MODEL ?? DEFAULT_HEALING_MODELS['ollama-cloud'])
+        : (process.env.HEAL_LLM_MODEL    ?? DEFAULT_HEALING_MODELS[provider as keyof typeof DEFAULT_HEALING_MODELS]),
+      ...(isOllama && { ollamaHost: process.env.OLLAMA_CLOUD_HOST ?? 'https://ollama.com' }),
       maxCalls:               parsePositiveInt(process.env.HEAL_MAX_CALLS, 10, 'HEAL_MAX_CALLS'),
       maxConsecutiveFailures: parsePositiveInt(
         process.env.HEAL_MAX_CONSECUTIVE_FAILURES,
@@ -60,7 +73,11 @@ export function readRuntimeConfig(): RuntimeConfig {
   };
 
   if (runtime.healing.enabled && !runtime.healing.apiKey) {
-    throw new Error('HEAL_LLM_API_KEY is required when ENABLE_RUNTIME_HEALING=true.');
+    throw new Error(
+      isOllama
+        ? 'OLLAMA_CLOUD_API_KEY is required when ENABLE_RUNTIME_HEALING=true and HEAL_LLM_PROVIDER=ollama-cloud.'
+        : 'HEAL_LLM_API_KEY is required when ENABLE_RUNTIME_HEALING=true.'
+    );
   }
 
   return runtime;

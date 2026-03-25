@@ -25,7 +25,7 @@ export default defineConfig({
 
   timeout:   60_000,
   expect:   { timeout: 15_000 }, // Shared demo site can be slow — 15s for all expect() calls
-  outputDir: 'test-results/',
+  outputDir: 'reports/artifacts/',
 
   // ─── Reporters ──────────────────────────────────────────────────────────────
 
@@ -34,22 +34,22 @@ export default defineConfig({
     // list — real-time terminal output during the run
     ['list'],
 
-    // html — interactive report saved to playwright-report/
-    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    // html — interactive report saved to reports/html/
+    ['html', { open: 'never', outputFolder: 'reports/html' }],
 
     // json — machine-readable results for CI dashboards
-    ['json', { outputFile: 'test-results/results.json' }],
+    ['json', { outputFile: 'reports/results.json' }],
 
     // allure — raw results for Allure HTML report generation (CI only)
-    ...(isCI ? [['allure-playwright', { outputFolder: 'allure-results', detail: true, suiteTitle: true }] as const] : []),
+    ...(isCI ? [['allure-playwright', { outputFolder: 'reports/allure', detail: true, suiteTitle: true }] as const] : []),
 
     // summary reporter — grouped overview after every run
     ['./reporters/SummaryReporter.ts'],
 
     // smart reporter — history-aware HTML report with trends, flakiness, stability grades
     ['playwright-smart-reporter', {
-      outputFile:               path.resolve('smart-report.html'),
-      historyFile:              path.resolve('test-history.json'),
+      outputFile:               path.resolve('reports/smart-report.html'),
+      historyFile:              path.resolve('reports/test-history.json'),
       maxHistoryRuns:           20,
       performanceThreshold:     0.2,
       projectName:              'orangehrm-ui',

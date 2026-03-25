@@ -3,6 +3,10 @@
 // Every test file imports `test` from this file instead of from @playwright/test directly.
 import { test as base, expect } from '@playwright/test';
 
+import { readEnv, readRuntimeConfig } from '../data/config';
+import { EnvConfig }                  from '../data/types';
+import { ApiClient }                  from '../api/ApiClient';
+
 import { DashboardPage }       from '../pages/DashboardPage';
 import { EmployeeListPage }    from '../pages/pim/EmployeeListPage';
 import { AddEmployeePage }     from '../pages/pim/AddEmployeePage';
@@ -14,7 +18,11 @@ import { LeaveListPage }       from '../pages/leave/LeaveListPage';
 
 // ─── Fixture Type Definitions ─────────────────────────────────────────────────
 
-type OrangeHRMFixtures = {
+type OrangeHRMFixtures = {  // Credentials — test data only, no browser
+  credentials: EnvConfig;
+
+  // Authenticated API client — admin session, no browser
+  adminApiClient: ApiClient;
   // Authenticated sessions
   adminDashboard: DashboardPage;
   essDashboard:   DashboardPage;
@@ -36,7 +44,23 @@ type OrangeHRMFixtures = {
 // ─── Extended Test Object ─────────────────────────────────────────────────────
 
 const test = base.extend<OrangeHRMFixtures>({
+  // ─── Credentials Fixture ──────────────────────────────────────────────────────
+  // Single place where readEnv() is called. Tests receive credentials via
+  // fixture injection — no config imports in test files.
+  credentials: async ({}, use) => {
+    await use(readEnv());
+  },
 
+  // ─── Admin API Client Fixture ───────────────────────────────────────────────
+  // Pre-built authenticated API client using admin session cookies.
+  // Tests that need direct API access get this injected — no manual
+  // ApiClient.create() calls or baseURL lookups in test files.
+  adminApiClient: async ({}, use) => {
+    const baseURL = readRuntimeConfig().env.baseURL;
+    const client  = await ApiClient.create(baseURL, 'playwright/.auth/admin.json');
+    await use(client);
+    await client.dispose();
+  },
   // ─── Authenticated Session Fixtures ──────────────────────────────────────────
 
   adminDashboard: async ({ page }, use) => {

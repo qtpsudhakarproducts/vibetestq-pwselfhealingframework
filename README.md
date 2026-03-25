@@ -19,13 +19,17 @@ Reports are published automatically after every nightly run and every manual dis
 
 ## What is Self-Healing?
 
-VibeTestQ is built so that **AI agents can read, understand, and repair tests autonomously**:
+VibeTestQ ships a runtime self-healing engine powered by LLMs. When a locator breaks at runtime the engine:
 
-- Every locator carries a human-readable `.describe()` label — agents know what broke
-- `STANDARDS.md` provides explicit conventions for AI agents to follow when modifying the codebase
-- Tag taxonomy (`@smoke`, `@critical`, `@pim` …) lets agents scope repairs precisely
-- All page objects share a `BasePage` contract — agents learn the pattern once and apply it everywhere
-- Test data is generated (Faker) — no hard-coded state for agents to break
+1. Captures the current page ARIA snapshot
+2. Sends it to the configured LLM with the locator’s `.describe()` label
+3. Receives a semantic replacement (e.g. `getByRole('button', { name: 'Login' })`)
+4. Retries the action transparently — the test continues
+5. Logs `status: "healed"` to `reports/healing-log.json` — a fix suggestion for the team
+
+**Supported LLM providers:** Anthropic · OpenAI · Google Gemini · **Ollama Cloud** (default)
+
+Every locator carries a human-readable `.describe()` label — agents know *what* broke and *why*. `STANDARDS.md` provides explicit conventions for AI agents to follow when modifying the codebase. Tag taxonomy (`@smoke`, `@critical`, `@pim` …) lets agents scope repairs precisely. All page objects share a `BasePage` contract — agents learn the pattern once and apply it everywhere. Test data is generated (Faker) — no hard-coded state for agents to break.
 
 ---
 
@@ -58,8 +62,9 @@ vibetestq-pwselfhealingframework/
 │   ├── admin/
 │   └── leave/
 ├── helpers/                  ← WaitHelpers, WebActions, AssertionHelpers, DateHelpers
-├── fixtures/                 ← Custom Playwright fixture extensions
-├── data/                     ← types.ts · generate.ts · readers.ts
+│   └── healing/              ← HealingEngine · HealingLLM adapters (4 providers)
+├── fixtures/                 ← Custom Playwright fixture extensions — single import point
+├── data/                     ← index.ts (barrel) · types.ts · generate.ts · readers.ts · config.ts
 ├── api/                      ← ApiClient · EmployeeApi · UserApi · LeaveApi
 ├── reporters/                ← Custom SummaryReporter
 ├── tests/                    ← Test specs organised by module
@@ -68,7 +73,8 @@ vibetestq-pwselfhealingframework/
 │   ├── admin/
 │   └── leave/
 ├── .github/workflows/        ← CI/CD pipelines
-├── test-data/                ← CSV, JSON, .env config files
+├── test-data/                ← employees.csv · leave-policy.json
+├── reports/                  ← All output: html/, artifacts/, allure/, healing-log.json (gitignored)
 ├── STANDARDS.md              ← Framework conventions (source of truth for AI agents)
 ├── playwright.config.ts
 └── global-setup.ts
@@ -99,36 +105,41 @@ npm run report
 
 ## Environment Configuration
 
-Runtime config is validated from environment variables (shell/CI).
+Runtime config is validated from environment variables. Copy a sample from `test-data/`:
 
-Sample files are available in `test-data/`:
-
-- `test-data/.env.dev.example`
-- `test-data/.env.qa.example`
-- `test-data/.env.staging.example`
-- `test-data/.env.prod.example`
+```bash
+cp test-data/.env.dev.example .env
+```
 
 Required variables:
 
-- `BASE_URL`
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD`
-- `ESS_USERNAME`
-- `ESS_PASSWORD`
+| Variable | Description |
+|---|---|
+| `BASE_URL` | Application base URL |
+| `ADMIN_USERNAME` | Admin login username |
+| `ADMIN_PASSWORD` | Admin login password |
+| `ESS_USERNAME` | ESS user login username |
+| `ESS_PASSWORD` | ESS user login password |
 
-Optional healing variables:
+Self-healing variables (all optional):
 
-- `ENABLE_RUNTIME_HEALING`
-- `HEAL_LLM_PROVIDER`
-- `HEAL_LLM_API_KEY`
-- `HEAL_LLM_MODEL`
-- `HEAL_MAX_CALLS`
-- `HEAL_MAX_CONSECUTIVE_FAILURES`
+| Variable | Default | Description |
+|---|---|---|
+| `ENABLE_RUNTIME_HEALING` | `false` | Enable the self-healing engine |
+| `HEAL_LLM_PROVIDER` | — | `ollama-cloud` \| `anthropic` \| `openai` \| `gemini` |
+| `OLLAMA_CLOUD_API_KEY` | — | Ollama Cloud API key (when provider = ollama-cloud) |
+| `OLLAMA_CLOUD_MODEL` | `gemma3:4b` | Model to use on Ollama Cloud |
+| `OLLAMA_CLOUD_HOST` | `https://ollama.com` | Ollama Cloud endpoint |
+| `HEAL_LLM_API_KEY` | — | API key for Anthropic / OpenAI / Gemini |
+| `HEAL_LLM_MODEL` | provider default | Model override for non-Ollama providers |
+| `HEAL_MAX_CALLS` | `10` | Max LLM calls per test run |
+| `HEAL_MAX_CONSECUTIVE_FAILURES` | `3` | Circuit-breaker threshold |
+| `HEAL_DRY_RUN` | `false` | Log would-heal entries without making LLM calls |
 
 PowerShell example (local run):
 
 ```powershell
-Get-Content test-data/.env.dev.example |
+Get-Content .env |
 	Where-Object { $_ -and -not $_.StartsWith('#') } |
 	ForEach-Object {
 		$parts = $_ -split '=', 2
@@ -210,6 +221,4 @@ npx playwright test --grep "(?=.*@smoke)(?=.*@pim)"
 
 ## Coding Standards
 
-All conventions — naming, tagging, locator strategy, assertion patterns, and AI-agent rules — are captured in [`STANDARDS.md`](STANDARDS.md).
-
-All conventions — naming, tagging, locator strategy, assertion patterns, and AI-agent rules — are captured in [`STANDARDS.md`](STANDARDS.md).
+All conventions — naming, tagging, locator strategy, assertion patterns, data rules, fixture usage, self-healing, and AI-agent rules — are captured in [`STANDARDS.md`](STANDARDS.md).

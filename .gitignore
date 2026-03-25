@@ -2,21 +2,8 @@ node_modules/
 dist/
 
 # Playwright
-playwright-report/
-test-results/
+reports/
 playwright/.auth/
-
-# Smart Reporter — generated output (re-created each run)
-smart-report.html
-tests/smart-report.html
-# Root history working file (CI copies this to history/ folder and commits it there)
-test-history-orangehrm-ui.json
-tests/test-history-orangehrm-ui.json
-# history/ folder is intentionally tracked — committed by CI after each run
-
-# Allure
-allure-results/
-allure-report/
 
 # Test data secrets
 test-data/.env.*

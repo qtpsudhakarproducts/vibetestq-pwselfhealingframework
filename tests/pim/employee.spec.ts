@@ -1,46 +1,34 @@
 // tests/pim/employee.spec.ts
-import { test, expect }    from '../../fixtures';
-import { generateEmployee } from '../../data/generate';
-import { ApiClient, EmployeeApi } from '../../api';
-import { readRuntimeConfig } from '../../data/config';
+import { test, expect }                    from '../../fixtures';
+import { generateEmployee, fullName } from '../../data';
+import { EmployeeApi }                     from '../../api';
 
 test.describe('PIM — Employee Management', () => {
 
   const employee  = generateEmployee(); // unique per run — no collisions on shared site
   let   empNumber = 0;                  // recorded in beforeAll, used in afterAll for cleanup
 
-  test.beforeAll(async () => {
-    const client = await ApiClient.create(
-      readRuntimeConfig().env.baseURL,
-      'playwright/.auth/admin.json'
-    );
-    const employeeApi = new EmployeeApi(client);
-    empNumber = await employeeApi.createEmployee(employee);
-    await client.dispose();
+  test.beforeAll(async ({ adminApiClient }) => {
+    empNumber = await new EmployeeApi(adminApiClient).createEmployee(employee);
   });
 
   // ─── Gap 1: Teardown ──────────────────────────────────────────────────
   // Delete the API-created employee after all tests finish.
   // This keeps the shared OrangeHRM demo site clean between runs —
   // without teardown, test employees accumulate and pollute search results.
-  test.afterAll(async () => {
+  test.afterAll(async ({ adminApiClient }) => {
     if (!empNumber) return; // nothing created (beforeAll failed or was skipped)
-    const client = await ApiClient.create(
-      readRuntimeConfig().env.baseURL,
-      'playwright/.auth/admin.json'
-    );
-    await new EmployeeApi(client).deleteEmployee(empNumber);
-    await client.dispose();
+    await new EmployeeApi(adminApiClient).deleteEmployee(empNumber);
   });
 
   test('employee appears in the Employee List after creation',
     { tag: ['@pim', '@smoke', '@critical'] },
     async ({ employeeListPage }, testInfo) => {
       testInfo.annotations.push({ type: 'employeeId', description: employee.employeeId });
-      testInfo.annotations.push({ type: 'employeeName', description: employee.fullName });
+      testInfo.annotations.push({ type: 'employeeName', description: fullName(employee) });
 
       await employeeListPage.searchByEmployeeName(employee.firstName);
-      await employeeListPage.assertEmployeeExistsInList(employee.fullName);
+      await employeeListPage.assertEmployeeExistsInList(fullName(employee));
     }
   );
 

@@ -59,7 +59,6 @@ export function generateEmployee(overrides?: Partial<EmployeeData>): EmployeeDat
   return {
     firstName,
     lastName,
-    fullName:    `${firstName} ${lastName}`,
     employeeId:  overrides?.employeeId  ?? `EMP-${suffix}`,
     gender:      overrides?.gender      ?? faker.helpers.arrayElement(['Male', 'Female'] as const),
     nationality: overrides?.nationality ?? 'American',
@@ -71,18 +70,18 @@ export function generateEmployee(overrides?: Partial<EmployeeData>): EmployeeDat
 
 /**
  * Generates a unique system user linked to an existing employee.
- * The employeeName must match an existing PIM employee — pass the fullName
- * from generateEmployee() or from an API-created employee.
+ * Pass the EmployeeData returned by generateEmployee() — the fullName is
+ * derived automatically, preventing mismatches with uninitialized string values.
  */
 export function generateUser(
-  employeeName: string,
+  employee: EmployeeData,
   overrides?: Partial<UserData>
 ): UserData {
   const suffix = faker.string.alphanumeric(6).toLowerCase();
 
   return {
     role:         overrides?.role         ?? 'ESS',
-    employeeName: overrides?.employeeName ?? employeeName,
+    employeeName: overrides?.employeeName ?? `${employee.firstName} ${employee.lastName}`,
     status:       overrides?.status       ?? 'Enabled',
     username:     overrides?.username     ?? `user.${suffix}`,
     password:     overrides?.password     ?? generateCompliantPassword(),

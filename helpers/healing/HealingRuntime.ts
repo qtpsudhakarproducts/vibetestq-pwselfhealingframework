@@ -22,12 +22,16 @@ export class HealingLogger {
 
   private readonly logPath: string;
 
-  constructor(logPath = path.join(process.cwd(), 'healing-log.json')) {
+  constructor(logPath = path.join(process.cwd(), 'reports', 'healing-log.json')) {
     this.logPath = logPath;
   }
 
   append(entry: HealEntry): void {
     let log: { heals: HealEntry[] } = { heals: [] };
+    const dir = path.dirname(this.logPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
     if (fs.existsSync(this.logPath)) {
       try {

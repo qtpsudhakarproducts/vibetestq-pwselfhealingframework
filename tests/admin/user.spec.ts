@@ -11,9 +11,8 @@
 //   6. Negative assertion   — search for a non-existent user, assert empty state
 //
 import { test, expect }           from '../../fixtures';
-import { ApiClient, EmployeeApi } from '../../api';
-import { readRuntimeConfig }      from '../../data/config';
-import { readCSV }                from '../../data/readers';
+import { EmployeeApi }            from '../../api';
+import { readCSV, TEST_DATA }         from '../../data';
 
 // ─── 1. Direct API Test ──────────────────────────────────────────────────────
 // No browser. Authenticates via stored session cookies and calls the
@@ -22,13 +21,8 @@ import { readCSV }                from '../../data/readers';
 
 test('API: EmployeeApi returns at least one employee from the system',
   { tag: ['@admin', '@api', '@smoke'] },
-  async () => {
-    const client = await ApiClient.create(
-      readRuntimeConfig().env.baseURL,
-      'playwright/.auth/admin.json'
-    );
-    const first = await new EmployeeApi(client).getFirst();
-    await client.dispose();
+  async ({ adminApiClient }) => {
+    const first = await new EmployeeApi(adminApiClient).getFirst();
 
     expect(first).not.toBeNull();
     expect(first!.firstName).toBeTruthy();
@@ -43,8 +37,8 @@ test('API: EmployeeApi returns at least one employee from the system',
 
 test('CSV: test-data/employees.csv is readable and contains valid rows',
   { tag: ['@admin', '@data', '@sanity'] },
-  async () => {
-    const rows = await readCSV('test-data/employees.csv');
+  () => {
+    const rows = readCSV(TEST_DATA.employeesCsv);
 
     expect(rows.length).toBeGreaterThan(0);
     // Every row must have the columns our data layer expects

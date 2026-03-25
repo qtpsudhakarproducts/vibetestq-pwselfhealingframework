@@ -9,7 +9,7 @@
 //   3. Admin role access           — admin storageState injected by fixture
 //
 import { test, expect }   from '../../fixtures';
-import { readLeavePolicy } from '../../data/readers';
+import { readLeavePolicy } from '../../data';
 
 // ─── 1 & 2. JSON File-Based Test Data + Config-Driven Assertions ─────────────
 // The leave policy (max days, types, etc.) is externalized to a JSON file.

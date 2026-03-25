@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: history-cache
         with:
-          path: test-history-orangehrm-ui.json
+          path: reports/test-history.json
           key: test-history-${{ github.ref_name }}
           restore-keys: |
             test-history-advreport
@@ -57,9 +57,10 @@ jobs:
       - name: Restore test history from repository (fallback)
         if: steps.history-cache.outputs.cache-hit != 'true'
         run: |
-          if [ -f history/test-history-orangehrm-ui.json ]; then
-            cp history/test-history-orangehrm-ui.json test-history-orangehrm-ui.json
-            echo "✅ History restored from committed file ($(wc -c < test-history-orangehrm-ui.json) bytes)"
+          if [ -f history/test-history.json ]; then
+            mkdir -p reports
+            cp history/test-history.json reports/test-history.json
+            echo "✅ History restored from committed file ($(wc -c < reports/test-history.json) bytes)"
           else
             echo "ℹ️  No prior history found — this is the first run"
           fi
@@ -77,7 +78,7 @@ jobs:
         uses: actions/cache/save@v4
         if: always()
         with:
-          path: test-history-orangehrm-ui.json
+          path: reports/test-history.json
           key: test-history-${{ github.ref_name }}-${{ github.run_id }}
 
       # ── 8. Commit history to repository (permanent backup) ────────────────
@@ -85,11 +86,11 @@ jobs:
         if: always() && (github.ref == 'refs/heads/advreport' || github.ref == 'refs/heads/main')
         run: |
           mkdir -p history
-          cp test-history-orangehrm-ui.json history/test-history-orangehrm-ui.json
+          cp reports/test-history.json history/test-history.json
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git add history/test-history-orangehrm-ui.json
+          git add history/test-history.json
           git diff --staged --quiet && echo "No history changes to commit" || \
             (git commit -m "chore: update test history [run #${{ github.run_number }}] [skip ci]" && git push origin HEAD:${{ github.ref_name }})
 
@@ -101,9 +102,9 @@ jobs:
           # Landing index.html at root links to both
           mkdir -p gh-pages-content/smart/archive
 
-          cp smart-report.html gh-pages-content/smart/index.html
+          cp reports/smart-report.html gh-pages-content/smart/index.html
           TIMESTAMP=$(date +%Y-%m-%d-%H%M)
-          cp smart-report.html "gh-pages-content/smart/archive/report-${TIMESTAMP}-run${{ github.run_number }}.html"
+          cp reports/smart-report.html "gh-pages-content/smart/archive/report-${TIMESTAMP}-run${{ github.run_number }}.html"
 
           # Create/refresh the root landing page
           cat > gh-pages-content/index.html << 'EOF'
@@ -158,6 +159,6 @@ jobs:
         with:
           name: smart-report-run-${{ github.run_number }}
           path: |
-            smart-report.html
-            test-history-orangehrm-ui.json
+            reports/smart-report.html
+            reports/test-history.json
           retention-days: 30
