@@ -72,6 +72,11 @@ jobs:
         env:
           CI: true
           GITHUB_RUN_ID: ${{ github.run_id }}
+          ENABLE_RUNTIME_HEALING: 'true'
+          HEAL_LLM_PROVIDER: 'ollama-cloud'
+          OLLAMA_CLOUD_API_KEY: ${{ secrets.OLLAMA_CLOUD_API_KEY }}
+          OLLAMA_CLOUD_MODEL: 'gemma3:4b'
+          OLLAMA_CLOUD_HOST: 'https://ollama.com'
 
       # ── 7. Save updated history to cache ──────────────────────────────────
       - name: Save test history to cache

@@ -79,9 +79,10 @@ jobs:
           TEST_ENV: dev
           # Runtime self-healing — nightly only
           ENABLE_RUNTIME_HEALING: 'true'
-          HEAL_LLM_PROVIDER: 'anthropic'
-          HEAL_LLM_MODEL: 'claude-sonnet-4-20250514'
-          HEAL_LLM_API_KEY: ${{ secrets.HEAL_LLM_API_KEY }}
+          HEAL_LLM_PROVIDER: 'ollama-cloud'
+          OLLAMA_CLOUD_API_KEY: ${{ secrets.OLLAMA_CLOUD_API_KEY }}
+          OLLAMA_CLOUD_MODEL: 'gemma3:4b'
+          OLLAMA_CLOUD_HOST: 'https://ollama.com'
         continue-on-error: true  # publish report even when tests fail
 
       # ─── Generate Allure Report ───────────────────────────────────────────────

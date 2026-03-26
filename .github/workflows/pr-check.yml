@@ -49,6 +49,11 @@ jobs:
         env:
           CI: true
           TEST_ENV: dev
+          ENABLE_RUNTIME_HEALING: 'true'
+          HEAL_LLM_PROVIDER: 'ollama-cloud'
+          OLLAMA_CLOUD_API_KEY: ${{ secrets.OLLAMA_CLOUD_API_KEY }}
+          OLLAMA_CLOUD_MODEL: 'gemma3:4b'
+          OLLAMA_CLOUD_HOST: 'https://ollama.com'
 
       - name: Upload Playwright report on failure
         if: failure()
