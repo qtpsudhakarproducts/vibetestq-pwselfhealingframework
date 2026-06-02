@@ -2,11 +2,6 @@
 # Nightly Regression — Full Suite with Allure History → GitHub Pages
 name: Nightly Regression
 
-on:
-  schedule:
-    - cron: '0 0 * * *'   # midnight UTC every day
-  workflow_dispatch:       # allow manual trigger
-
 permissions:
   contents: write          # required to push to gh-pages branch
 
